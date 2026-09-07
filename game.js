@@ -2839,8 +2839,8 @@ setInterval(updatePracticeTimers,1000);
 setInterval(updateDivineRoamingTimer,1000);
 setInterval(()=>{const today=dateKey()||'local';if(today!==lastScriptureDayKey){lastScriptureDayKey=today;if(!$('#marketModal').classList.contains('hidden'))renderMarket(currentMarketTab);if(currentFeature==='cave'&&currentCaveView==='brew')renderBrewProduction($('#caveInner'));if(currentFeature==='sect'&&currentSectView==='shop')renderSectShop()}},1000);
 setInterval(()=>{if(sessionOnline&&!document.hidden)syncTrustedTime()},600000);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)forceOffline();else finishPause()});
-window.addEventListener('blur',forceOffline);window.addEventListener('focus',finishPause);window.addEventListener('pagehide',forceOffline);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&!suppressSave)save()});
+window.addEventListener('pagehide',()=>{if(!suppressSave)save()});
 async function initializeAssetCache(){
   if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
   try{
