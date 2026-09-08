@@ -1,12 +1,12 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260908-47';
+window.WENDAO_BUILD='20260908-48';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
 let jadeGrantSyncInFlight=false,currentPlayerUid='';
-const accountRecoveryConfig={codeKey:'wendao-recovery-code-release-v1'};
-let recoveryBackupTimer=0,recoveryBackupInFlight=false;
+const accountRecoveryConfig={codeKey:'wendao-recovery-code-release-v1',boundUidKey:'wendao-bound-player-uid-release-v1',transferNoticeKey:'wendao-account-transfer-notice'};
+let recoveryBackupTimer=0,recoveryBackupInFlight=false,accountOwnershipCheckInFlight=false;
 
 const spiritRealms = ['聽息','引霞','凝曜','靈胎','化念','歸流','照虛','踏霄','遊穹','蛻凡','玄闕','天衡','玉宸','羅穹','神庭','寂空','渡厄','渾天','近聖','證聖','長明','道尊','天序'];
 const bodyRealms = ['塵軀','納勁','纏筋','玉骨','鳴髓','曜身','擎嶽','撼霄','鎮陸','渡星','寰甲','無量'];
@@ -890,13 +890,15 @@ async function registerFormalPlayer(session,retryAuth=true){
   if(!session?.user?.id)return '';
   const existingResponse=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?user_id=eq.${encodeURIComponent(session.user.id)}&select=public_uid&limit=1`,{headers:leaderboardHeaders(session.access_token)});
   if(existingResponse.status===401&&retryAuth)return registerFormalPlayer(await ensureLeaderboardSession(true),false);
-  if(existingResponse.ok){const [existing]=await existingResponse.json();if(existing?.public_uid){currentPlayerUid=existing.public_uid;return currentPlayerUid}}
+  if(existingResponse.ok){const [existing]=await existingResponse.json();if(existing?.public_uid){currentPlayerUid=existing.public_uid;localStorage.setItem(accountRecoveryConfig.boundUidKey,currentPlayerUid);return currentPlayerUid}if(localStorage.getItem(accountRecoveryConfig.boundUidKey)){clearTransferredDeviceData();throw new Error('account transferred')}}
   const publicUid=publicPlayerUid(session.user.id);
   const payload={user_id:session.user.id,public_uid:publicUid,player_name:(state.name||'無名修士').trim().slice(0,20),release_channel:'v1'};
   const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?on_conflict=user_id`,{method:'POST',headers:{...leaderboardHeaders(session.access_token),Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});
   if(response.status===401&&retryAuth)return registerFormalPlayer(await ensureLeaderboardSession(true),false);
-  if(!response.ok)throw new Error('player registration failed');currentPlayerUid=publicUid;return publicUid;
+  if(!response.ok)throw new Error('player registration failed');currentPlayerUid=publicUid;localStorage.setItem(accountRecoveryConfig.boundUidKey,currentPlayerUid);return publicUid;
 }
+function clearTransferredDeviceData(){if(suppressSave)return;suppressSave=true;sessionOnline=false;clearTimeout(battleTimer);clearSwordTrialAdvance();clearTimeout(recoveryBackupTimer);battle=null;stopAllBgm();sessionStorage.setItem(accountRecoveryConfig.transferNoticeKey,'1');localStorage.removeItem(accountRecoveryConfig.codeKey);localStorage.removeItem(accountRecoveryConfig.boundUidKey);localStorage.removeItem(leaderboardConfig.sessionKey);localStorage.removeItem(saveKey);location.reload()}
+async function verifyAccountOwnership(){const boundUid=localStorage.getItem(accountRecoveryConfig.boundUidKey),session=readLeaderboardSession();if(!boundUid||!state.name||!session?.user?.id||accountOwnershipCheckInFlight||document.hidden)return;accountOwnershipCheckInFlight=true;try{const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?user_id=eq.${encodeURIComponent(session.user.id)}&select=public_uid&limit=1`,{headers:leaderboardHeaders(session.access_token)});if(response.status===401){await ensureLeaderboardSession(true);return}if(!response.ok)return;const [account]=await response.json();if(!account||account.public_uid!==boundUid)clearTransferredDeviceData()}catch{}finally{accountOwnershipCheckInFlight=false}}
 function storedRecoveryCode(){return localStorage.getItem(accountRecoveryConfig.codeKey)||''}
 function normalizeRecoveryCode(value){const compact=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(!compact.startsWith('WDR1')||compact.length!==28)return '';return `WDR1-${compact.slice(4,10)}-${compact.slice(10,16)}-${compact.slice(16,22)}-${compact.slice(22,28)}`}
 function generateRecoveryCode(){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',bytes=crypto.getRandomValues(new Uint8Array(24)),body=[...bytes].map(value=>alphabet[value%alphabet.length]).join('');return `WDR1-${body.slice(0,6)}-${body.slice(6,12)}-${body.slice(12,18)}-${body.slice(18,24)}`}
@@ -906,9 +908,9 @@ async function recoveryRpc(name,body,retryAuth=true){let session=await ensureLea
 async function uploadRecoveryBackup(code=storedRecoveryCode()){if(!code||recoveryBackupInFlight||!state.name)return;recoveryBackupInFlight=true;try{await recoveryRpc('save_recovery_backup',{p_recovery_hash:await recoveryCodeHash(code),p_save_data:recoverySaveData()})}finally{recoveryBackupInFlight=false}}
 function scheduleRecoveryBackup(){if(!storedRecoveryCode()||!state.name||recoveryBackupTimer)return;recoveryBackupTimer=setTimeout(()=>{recoveryBackupTimer=0;uploadRecoveryBackup().catch(()=>{})},15000)}
 function refreshRecoveryCodeDisplay(){const code=storedRecoveryCode(),value=$('#recoveryCodeValue'),create=$('#createRecoveryCodeBtn'),copy=$('#copyRecoveryCodeBtn');if(value)value.textContent=code||'尚未建立';if(create)create.textContent=code?'重新產生恢復碼':'建立恢復碼';if(copy)copy.disabled=!code}
-async function createRecoveryCode(){if(recoveryBackupInFlight)throw new Error('存檔正在備份，請稍後再試');const button=$('#createRecoveryCodeBtn'),hint=$('#recoveryCodeHint'),prior=storedRecoveryCode();if(prior&&!await gameConfirm('重新產生後，舊恢復碼會立即失效。確定繼續？',{title:'重新產生恢復碼',confirmText:'確認產生'}))return;button.disabled=true;hint.textContent='正在建立恢復碼並備份角色……';try{const code=generateRecoveryCode();await uploadRecoveryBackup(code);localStorage.setItem(accountRecoveryConfig.codeKey,code);refreshRecoveryCodeDisplay();hint.textContent='已完成雲端備份；請將恢復碼保存在安全的位置。';toast('恢復碼已建立，請立即妥善保存')}catch(error){hint.textContent=`建立失敗：${error.message}`;throw error}finally{button.disabled=false}}
+async function createRecoveryCode(){if(recoveryBackupInFlight)throw new Error('存檔正在備份，請稍後再試');const button=$('#createRecoveryCodeBtn'),hint=$('#recoveryCodeHint'),prior=storedRecoveryCode();if(prior&&!await gameConfirm('重新產生後，舊恢復碼會立即失效。確定繼續？',{title:'重新產生恢復碼',confirmText:'確認產生'}))return;button.disabled=true;hint.textContent='正在建立恢復碼並備份角色……';try{const session=await ensureLeaderboardSession();await registerFormalPlayer(session);const code=generateRecoveryCode();await uploadRecoveryBackup(code);localStorage.setItem(accountRecoveryConfig.codeKey,code);refreshRecoveryCodeDisplay();hint.textContent='已完成雲端備份；請將恢復碼保存在安全的位置。';toast('恢復碼已建立，請立即妥善保存')}catch(error){hint.textContent=`建立失敗：${error.message}`;throw error}finally{button.disabled=false}}
 function openAccountRecovery(event){event?.stopPropagation();$('#accountRecoveryInput').value='';$('#accountRecoveryError').textContent='';$('#accountRecoveryModal').classList.remove('hidden')}
-async function recoverAccount(){const input=$('#accountRecoveryInput'),button=$('#accountRecoveryConfirm'),code=normalizeRecoveryCode(input.value);if(!code){$('#accountRecoveryError').textContent='恢復碼格式不正確';return}if(state.name&&!await gameConfirm('恢復帳號會以雲端存檔取代此裝置目前的角色。確定繼續？',{title:'取代目前角色',confirmText:'確認恢復',danger:true}))return;button.disabled=true;$('#accountRecoveryError').textContent='正在取回帳號……';try{const {data}=await recoveryRpc('recover_formal_account',{p_recovery_hash:await recoveryCodeHash(code)});if(!data||typeof data!=='object'||!data.name)throw new Error('找不到可恢復的角色存檔');localStorage.setItem(saveKey,JSON.stringify(data));leaderboardKnownPower=null;leaderboardKnownName='';leaderboardKnownAscensionKey='';const nextCode=generateRecoveryCode();localStorage.setItem(accountRecoveryConfig.codeKey,nextCode);state={...defaults,...data};await uploadRecoveryBackup(nextCode);location.reload()}catch(error){$('#accountRecoveryError').textContent=error.message;button.disabled=false}}
+async function recoverAccount(){const input=$('#accountRecoveryInput'),button=$('#accountRecoveryConfirm'),code=normalizeRecoveryCode(input.value);if(!code){$('#accountRecoveryError').textContent='恢復碼格式不正確';return}if(state.name&&!await gameConfirm('恢復帳號會以雲端存檔取代此裝置目前的角色。確定繼續？',{title:'取代目前角色',confirmText:'確認恢復',danger:true}))return;button.disabled=true;$('#accountRecoveryError').textContent='正在取回帳號……';try{const {data}=await recoveryRpc('recover_formal_account',{p_recovery_hash:await recoveryCodeHash(code)});if(!data||typeof data!=='object'||!data.name)throw new Error('找不到可恢復的角色存檔');localStorage.setItem(saveKey,JSON.stringify(data));localStorage.removeItem(accountRecoveryConfig.boundUidKey);leaderboardKnownPower=null;leaderboardKnownName='';leaderboardKnownAscensionKey='';const nextCode=generateRecoveryCode();localStorage.setItem(accountRecoveryConfig.codeKey,nextCode);state={...defaults,...data};await uploadRecoveryBackup(nextCode);location.reload()}catch(error){$('#accountRecoveryError').textContent=error.message;button.disabled=false}}
 async function markJadeGrantClaimed(session,id){
   return fetch(`${leaderboardConfig.url}/rest/v1/jade_grants?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}`,{method:'PATCH',headers:{...leaderboardHeaders(session.access_token),Prefer:'return=minimal'},body:JSON.stringify({status:'claimed',claimed_at:new Date().toISOString()})});
 }
@@ -2717,7 +2719,7 @@ load();normalizeSpiritRootCurve(spiritRootCurveMigrationNeeded);normalizeSectRec
 normalizeQiPath();
 try{const existing=JSON.parse(localStorage.getItem(saveKey));if(state.name&&(!existing||!Object.prototype.hasOwnProperty.call(existing,'cultivationAwakened')))state.cultivationAwakened=true}catch{}
 setClockAnchor(state.lastTrustedTime||Math.min(state.lastSave||Date.now(),Date.now()),location.protocol==='file:');
-$('#titleHint').textContent=state.name?'點擊螢幕繼續修煉':'點擊螢幕進入遊戲';
+const accountTransferNotice=sessionStorage.getItem(accountRecoveryConfig.transferNoticeKey);if(accountTransferNotice)sessionStorage.removeItem(accountRecoveryConfig.transferNoticeKey);$('#titleHint').textContent=accountTransferNotice?'帳號已轉移至其他裝置・本機資料已清除':state.name?'點擊螢幕繼續修煉':'點擊螢幕進入遊戲';
 $('#titleScreen').onclick=enterFromTitle;
 $('#titleScreen').onkeydown=e=>{if(e.target===$('#titleScreen')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();enterFromTitle()}};
 $('#prologueScreen').onclick=finishCreationPrologue;
@@ -2937,6 +2939,8 @@ setInterval(updateDivineRoamingTimer,1000);
 setInterval(()=>{const today=dateKey()||'local';if(today!==lastScriptureDayKey){lastScriptureDayKey=today;if(!$('#marketModal').classList.contains('hidden'))renderMarket(currentMarketTab);if(currentFeature==='cave'&&currentCaveView==='brew')renderBrewProduction($('#caveInner'));if(currentFeature==='sect'&&currentSectView==='shop')renderSectShop()}},1000);
 setInterval(()=>{if(sessionOnline&&!document.hidden)syncTrustedTime()},600000);
 setInterval(()=>{if(sessionOnline&&!document.hidden)syncJadeGrants()},60000);
+setInterval(verifyAccountOwnership,30000);
+window.addEventListener('online',verifyAccountOwnership);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!suppressSave)save()});
 window.addEventListener('pagehide',()=>{if(!suppressSave)save()});
 async function initializeAssetCache(){
