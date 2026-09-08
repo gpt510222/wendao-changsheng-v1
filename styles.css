@@ -753,6 +753,10 @@ html.entry-transition body::after{content:"";position:fixed;z-index:9999;inset:0
 
 #confirmModal{z-index:240}
 
+/* Account recovery: game-native, compact, and usable before character entry. */
+.title-recovery-button{position:absolute;z-index:8;left:50%;bottom:max(56px,calc(env(safe-area-inset-bottom) + 42px));padding:8px 16px;border:1px solid #b99c68;border-radius:18px;background:#173d35c9;color:#f5ead4;font-size:12px;letter-spacing:.08em;transform:translateX(-50%);box-shadow:0 4px 14px #10241d88}.account-recovery-card{display:grid;gap:7px;margin:10px 0;padding:13px;border:1px solid #a68d67;border-radius:12px;background:#edf3eccc;text-align:center}.account-recovery-card>small{color:#876f49}.account-recovery-card>b{overflow-wrap:anywhere;color:#315f58;font-size:14px;letter-spacing:.06em}.account-recovery-card>p{margin:0;color:#766a58;font-size:10px;line-height:1.5}.account-recovery-card>div{display:grid;grid-template-columns:1fr 1fr;gap:7px}.account-recovery-card button{padding:8px;border:1px solid #64877c;border-radius:9px;background:#4f8178;color:#fff}.account-recovery-card button:disabled{opacity:.45}.account-recovery-modal-card{width:min(92vw,480px)}.account-recovery-modal-card>p{line-height:1.65}.account-recovery-modal-card input{box-sizing:border-box;width:100%;text-transform:uppercase}.account-recovery-modal-card .jade-button{width:100%;margin-top:8px}
+@media(max-width:540px){.title-recovery-button{bottom:max(48px,calc(env(safe-area-inset-bottom) + 34px));font-size:11px}.account-recovery-card>div{grid-template-columns:1fr}}
+
 /* Keep the labelled tribulation-pill limits legible on narrow phones. */
 .tribulation-pill-stepper .tribulation-pill-limit{width:auto;min-width:52px;padding:0 10px;border-radius:16px;font-size:12px;font-weight:700;white-space:nowrap}
 @media(max-width:540px){.tribulation-pill-stepper{gap:7px}.tribulation-pill-stepper .tribulation-pill-limit{min-width:54px;height:34px;padding:0 9px}}

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>問道長生 v1</title>
-  <link rel="stylesheet" href="styles.css?v=20260908-9">
+  <link rel="stylesheet" href="styles.css?v=20260908-10">
   <link rel="stylesheet" href="q-style.css?v=20260908-18">
   <script>document.documentElement.classList.add('q-style');</script>
 </head>
@@ -18,6 +18,7 @@
         <p class="seal">凡心一念・踏霧尋仙</p>
       </div>
       <div class="tap-to-enter"><span id="titleHint">點擊螢幕進入遊戲</span><small>CLICK TO ENTER</small></div>
+      <button id="titleRecoveryBtn" class="title-recovery-button" type="button">使用帳號恢復碼</button>
       <small class="version">正式版 v1.0.0</small>
     </section>
 
@@ -336,6 +337,12 @@
               <p id="playerUidHint">購買靈玉時，請將此 UID 提供給開發者。</p>
               <button id="copyPlayerUidBtn" type="button" disabled>複製 UID</button>
             </section>
+            <section class="account-recovery-card">
+              <small>帳號恢復碼</small>
+              <b id="recoveryCodeValue">尚未建立</b>
+              <p id="recoveryCodeHint">建立後會自動備份存檔；請將恢復碼保存在安全的位置。</p>
+              <div><button id="createRecoveryCodeBtn" type="button">建立恢復碼</button><button id="copyRecoveryCodeBtn" type="button" disabled>複製恢復碼</button></div>
+            </section>
             <button id="muteBtn" class="setting-row">♪ 靜音</button>
             <button id="deleteStartBtn" class="setting-row danger">刪除角色</button>
             <button id="settingsCloseBtn" class="text-button">關閉</button>
@@ -352,6 +359,16 @@
             <p>角色、境界與所有修為都會永久消失。</p>
             <button id="deleteFinalBtn" class="danger-button">確認永久刪除</button><button id="deleteBackBtn" class="text-button">返回</button>
           </div>
+        </div>
+      </div>
+
+      <div id="accountRecoveryModal" class="modal hidden">
+        <div class="paper-panel modal-card account-recovery-modal-card">
+          <p class="eyebrow">帳號移轉</p><h2>使用恢復碼</h2>
+          <p>輸入原裝置保存的恢復碼，即可取回角色存檔、原玩家 UID、排行榜身分與待領靈玉。</p>
+          <input id="accountRecoveryInput" class="delete-input" placeholder="WDR1-XXXXXX-XXXXXX-XXXXXX-XXXXXX" autocomplete="off" spellcheck="false">
+          <p id="accountRecoveryError" class="error"></p>
+          <button id="accountRecoveryConfirm" class="jade-button">恢復帳號</button><button id="accountRecoveryCancel" class="text-button">取消</button>
         </div>
       </div>
 
@@ -544,6 +561,6 @@
   <audio id="tribulationFailureBgm" src="assets/bgm-tribulation-failure-v1.wav" preload="auto"></audio>
   <audio id="swordBreakthroughBgm" src="assets/bgm-sword-breakthrough-user-v1.wav" preload="auto"></audio>
   <script src="partner-system.js?v=20260908-4"></script>
-  <script src="game.js?v=20260908-43"></script>
+  <script src="game.js?v=20260908-44"></script>
 </body>
 </html>
