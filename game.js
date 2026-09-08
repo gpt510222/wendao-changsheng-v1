@@ -389,6 +389,23 @@ const trueFormCatalog=[
   {id:'dari-buddha-hand',name:'大日佛掌',quality:'masterwork',kind:'天工絕品',hideTitle:true,image:'assets/qstyle-v2/true-form-dari-buddha-v3.png',description:'半透明的大日佛影於修士身後顯化，垂下金光雙掌，安穩托持主角入定修練。'},
   {id:'wanjie-demon',name:'萬劫魔尊',quality:'masterwork',kind:'天工絕品',hideTitle:true,image:'assets/qstyle-v2/true-form-wanjie-demon-v1.png',description:'萬劫魔影自黑蓮中顯化，四臂結印，幽焰與破碎劫輪緩緩迴轉。'}
 ];
+const masterworkTrueFormPrice=100;
+function masterworkTrueFormOwned(form){return form?.quality!=='masterwork'||(state.ownedMasterworkTrueForms||[]).includes(form.id)}
+function normalizeTrueFormOwnership(){
+  state.ownedMasterworkTrueForms=Array.isArray(state.ownedMasterworkTrueForms)?state.ownedMasterworkTrueForms:[];
+  const form=trueFormCatalog.find(item=>item.id===(state.trueForm||'none'))||trueFormCatalog[0];
+  if(form.quality==='masterwork'&&!masterworkTrueFormOwned(form))state.trueForm='none';
+}
+async function selectOrBuyTrueForm(id){
+  const form=trueFormCatalog.find(item=>item.id===id);if(!form)return;
+  if(!masterworkTrueFormOwned(form)){
+    if((state.spiritJade||0)<masterworkTrueFormPrice)return toast('靈玉不足');
+    const confirmed=await gameConfirm(`確定花費 ${masterworkTrueFormPrice} 靈玉購買「${form.name}」？\n購買後將永久加入此角色的衣閣。`,{title:'購買天工絕品真身',confirmText:'購買'});if(!confirmed)return;
+    if((state.spiritJade||0)<masterworkTrueFormPrice)return toast('無法完成購買');
+    state.spiritJade-=masterworkTrueFormPrice;state.ownedMasterworkTrueForms.push(form.id);toast(`已購得「${form.name}」`);
+  }
+  state.trueForm=form.id;applyCharacterVisual();renderWardrobeSection('true-forms',true);render();save();
+}
 const titleCatalog=[
   {id:'first-inquiry',name:'初心問道',image:'assets/qstyle-v2/titles/title-first-inquiry-v1.png',kind:'初入仙途',hint:'初入修行即可取得。',alwaysUnlocked:true},
   {id:'qi-ascension',name:'羽化凌霄',image:'assets/qstyle-v2/titles/title-qi-v1.png',kind:'單途飛升',hint:'成功飛升時，只有練氣達到仙陣門檻。'},
@@ -414,6 +431,7 @@ defaults.bodyTrainingSystemVersion=3;defaults.bodyTrainingCharges=2;defaults.bod
 defaults.testSwordPathPillsMailVersion=0;defaults.testSwordEssenceMailVersion=0;defaults.righteousQiPillCount=0;defaults.evilQiPillCount=0;
 defaults.processedJadeGrantIds=[];
 defaults.ownedMasterworkOutfits=[];
+defaults.ownedMasterworkTrueForms=[];
 defaults.sectTechniqueMailVersion=0;
 defaults.sectRecords={};
 defaults.sectMerit=0;
@@ -499,6 +517,7 @@ function syncAscensionTitleUnlock(){
 }
 function applyCharacterVisual(){
   normalizeWardrobeOutfit();
+  normalizeTrueFormOwnership();
   const hero=$('#heroCharacter');if(hero)hero.src=characterAsset();
   const outfit=wardrobeOutfits[state.gender]?.find(item=>item.id===(Number(state.outfit)||1));
   const heroArt=$('#heroArt');if(heroArt)heroArt.dataset.outfitEffect=outfit?.effect||'none';
@@ -2407,8 +2426,8 @@ function renderWardrobeSection(section,preserveScroll=false){
     return;
   }
   if(section==='true-forms'){
-    replaceWardrobeContent(inner,`<div class="wardrobe-intro"><b>真身異象</b><span>真身與衣裝共用凡品至天工絕品的品質規則。</span></div><div class="wardrobe-showcase-strip" data-wardrobe-strip="true-forms">${trueFormCatalog.map(form=>`<article class="true-form-card ${state.trueForm===form.id?'selected':''}" data-quality="${form.quality}" data-true-form-card="${form.id}"><span class="true-form-preview ${form.id==='none'?'empty':''}">${form.image?`<img src="${form.image}" alt="${form.name}">`:'<i>無相</i>'}</span><span><b>${form.name}</b><strong class="item-quality">${form.kind}</strong><small>${form.description}</small></span><button type="button" class="true-form-action" data-true-form-action="${form.id}">${state.trueForm===form.id?'顯化中':'顯化'}</button></article>`).join('')}</div>`);
-    $$('[data-true-form-action]').forEach(button=>button.onclick=()=>{state.trueForm=button.dataset.trueFormAction;applyCharacterVisual();renderWardrobeSection('true-forms',true);save()});
+    replaceWardrobeContent(inner,`<div class="wardrobe-intro"><b>真身異象</b><span>天工絕品真身需花費靈玉永久購得。</span></div><div class="wardrobe-showcase-strip" data-wardrobe-strip="true-forms">${trueFormCatalog.map(form=>{const owned=masterworkTrueFormOwned(form),selected=owned&&state.trueForm===form.id,canBuy=(state.spiritJade||0)>=masterworkTrueFormPrice;return `<article class="true-form-card ${selected?'selected':''} ${owned?'':'locked'}" data-quality="${form.quality}" data-true-form-card="${form.id}"><span class="true-form-preview ${form.id==='none'?'empty':''}">${form.image?`<img src="${form.image}" alt="${form.name}">`:'<i>無相</i>'}</span><span><b>${form.name}</b><strong class="item-quality">${form.kind}${form.quality==='masterwork'&&!owned?' ・ 未擁有':''}</strong><small>${form.description}</small></span><button type="button" class="true-form-action" data-true-form-action="${form.id}" ${!owned&&!canBuy?'disabled':''}>${selected?'顯化中':owned?'顯化':`${masterworkTrueFormPrice} 靈玉`}</button></article>`}).join('')}</div>`);
+    $$('[data-true-form-action]').forEach(button=>button.onclick=()=>selectOrBuyTrueForm(button.dataset.trueFormAction));
     restoreWardrobeScroll(scrollTop);
     return;
   }
