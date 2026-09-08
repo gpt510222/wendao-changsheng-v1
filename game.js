@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260908-46';
+window.WENDAO_BUILD='20260908-47';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -879,19 +879,22 @@ function combatPower(){return Math.round(Object.entries(combatPowerWeights).redu
 function leaderboardHeaders(accessToken=''){const headers={apikey:leaderboardConfig.publishableKey,'Content-Type':'application/json'};if(accessToken)headers.Authorization=`Bearer ${accessToken}`;return headers}
 function readLeaderboardSession(){try{return JSON.parse(localStorage.getItem(leaderboardConfig.sessionKey))}catch{return null}}
 function storeLeaderboardSession(session){if(!session?.access_token||!session?.user?.id)return null;const stored={access_token:session.access_token,refresh_token:session.refresh_token,user:{id:session.user.id},expires_at:Date.now()+Math.max(60,session.expires_in||3600)*1000};localStorage.setItem(leaderboardConfig.sessionKey,JSON.stringify(stored));return stored}
-async function ensureLeaderboardSession(){
-  let session=readLeaderboardSession();if(session?.access_token&&session?.user?.id&&session.expires_at>Date.now()+60000)return session;
+async function ensureLeaderboardSession(forceRefresh=false){
+  let session=readLeaderboardSession();if(!forceRefresh&&session?.access_token&&session?.user?.id&&session.expires_at>Date.now()+60000)return session;
   if(session?.refresh_token){try{const response=await fetch(`${leaderboardConfig.url}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:leaderboardHeaders(),body:JSON.stringify({refresh_token:session.refresh_token})});if(response.ok)return storeLeaderboardSession(await response.json())}catch{}}
+  localStorage.removeItem(leaderboardConfig.sessionKey);
   const response=await fetch(`${leaderboardConfig.url}/auth/v1/signup`,{method:'POST',headers:leaderboardHeaders(),body:'{}'});if(!response.ok)throw new Error('anonymous sign-in failed');return storeLeaderboardSession(await response.json());
 }
 function publicPlayerUid(userId){return userId?`WD1-${String(userId).toUpperCase()}`:''}
-async function registerFormalPlayer(session){
+async function registerFormalPlayer(session,retryAuth=true){
   if(!session?.user?.id)return '';
   const existingResponse=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?user_id=eq.${encodeURIComponent(session.user.id)}&select=public_uid&limit=1`,{headers:leaderboardHeaders(session.access_token)});
+  if(existingResponse.status===401&&retryAuth)return registerFormalPlayer(await ensureLeaderboardSession(true),false);
   if(existingResponse.ok){const [existing]=await existingResponse.json();if(existing?.public_uid){currentPlayerUid=existing.public_uid;return currentPlayerUid}}
   const publicUid=publicPlayerUid(session.user.id);
   const payload={user_id:session.user.id,public_uid:publicUid,player_name:(state.name||'無名修士').trim().slice(0,20),release_channel:'v1'};
   const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?on_conflict=user_id`,{method:'POST',headers:{...leaderboardHeaders(session.access_token),Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});
+  if(response.status===401&&retryAuth)return registerFormalPlayer(await ensureLeaderboardSession(true),false);
   if(!response.ok)throw new Error('player registration failed');currentPlayerUid=publicUid;return publicUid;
 }
 function storedRecoveryCode(){return localStorage.getItem(accountRecoveryConfig.codeKey)||''}
@@ -899,7 +902,7 @@ function normalizeRecoveryCode(value){const compact=String(value||'').toUpperCas
 function generateRecoveryCode(){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',bytes=crypto.getRandomValues(new Uint8Array(24)),body=[...bytes].map(value=>alphabet[value%alphabet.length]).join('');return `WDR1-${body.slice(0,6)}-${body.slice(6,12)}-${body.slice(12,18)}-${body.slice(18,24)}`}
 async function recoveryCodeHash(code){const normalized=normalizeRecoveryCode(code);if(!normalized)throw new Error('恢復碼格式不正確');const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(normalized));return [...new Uint8Array(bytes)].map(value=>value.toString(16).padStart(2,'0')).join('')}
 function recoverySaveData(){return JSON.parse(JSON.stringify(state,(_,value)=>typeof value==='bigint'?value.toString():value))}
-async function recoveryRpc(name,body){const session=await ensureLeaderboardSession(),response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)}),data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'帳號恢復服務暫時無法使用');return {session,data}}
+async function recoveryRpc(name,body,retryAuth=true){let session=await ensureLeaderboardSession(),response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)});if(response.status===401&&retryAuth){session=await ensureLeaderboardSession(true);return recoveryRpc(name,body,false)}const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'帳號恢復服務暫時無法使用');return {session,data}}
 async function uploadRecoveryBackup(code=storedRecoveryCode()){if(!code||recoveryBackupInFlight||!state.name)return;recoveryBackupInFlight=true;try{await recoveryRpc('save_recovery_backup',{p_recovery_hash:await recoveryCodeHash(code),p_save_data:recoverySaveData()})}finally{recoveryBackupInFlight=false}}
 function scheduleRecoveryBackup(){if(!storedRecoveryCode()||!state.name||recoveryBackupTimer)return;recoveryBackupTimer=setTimeout(()=>{recoveryBackupTimer=0;uploadRecoveryBackup().catch(()=>{})},15000)}
 function refreshRecoveryCodeDisplay(){const code=storedRecoveryCode(),value=$('#recoveryCodeValue'),create=$('#createRecoveryCodeBtn'),copy=$('#copyRecoveryCodeBtn');if(value)value.textContent=code||'尚未建立';if(create)create.textContent=code?'重新產生恢復碼':'建立恢復碼';if(copy)copy.disabled=!code}
@@ -923,7 +926,7 @@ async function syncJadeGrants({notify=true}={}){
 async function refreshPlayerUidDisplay(){
   const value=$('#playerUidValue'),button=$('#copyPlayerUidBtn'),hint=$('#playerUidHint');if(!value||!button)return;
   value.textContent='正在取得……';button.disabled=true;
-  try{const session=await ensureLeaderboardSession();const uid=await registerFormalPlayer(session);value.textContent=uid;button.disabled=!uid;hint.textContent='購買靈玉時，請將此 UID 提供給開發者。'}catch{value.textContent='暫時無法取得 UID';hint.textContent='請確認網路後再次開啟設定。'}
+  try{const session=await ensureLeaderboardSession();const uid=await registerFormalPlayer(session);value.textContent=uid;button.disabled=!uid;hint.textContent='購買靈玉時，請將此 UID 提供給開發者。'}catch(error){value.textContent='暫時無法取得 UID';hint.textContent=error?.message==='anonymous sign-in failed'?'帳號服務暫時無法登入，請稍後再試。':'連線憑證更新失敗，請稍後重新開啟設定。'}
 }
 function ascensionLeaderboardKey(a=normalizeAscension()){return a.ascended?`${Math.max(1,Number(a.ascendedAt)||Date.now())}:${a.route}`:''}
 function leaderboardVersionValue(){const key=ascensionLeaderboardKey();return key?`${leaderboardConfig.gameVersion}|A:${key}`:leaderboardConfig.gameVersion}
