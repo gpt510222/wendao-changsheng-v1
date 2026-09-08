@@ -363,6 +363,24 @@ const wardrobeOutfits={
     {id:6,name:'太初帝袍',kind:'天工絕品',quality:'masterwork',effect:'star'},{id:7,name:'鴻蒙火袞',kind:'天工絕品',quality:'masterwork',effect:'flame'},{id:8,name:'萬象道服',kind:'天工絕品',quality:'masterwork',effect:'myriad'}
   ]
 };
+const masterworkOutfitPrice=50;
+function masterworkOutfitKey(gender,id){return `${gender}:${id}`}
+function masterworkOutfitOwned(outfit,gender=state.gender){return outfit?.quality!=='masterwork'||(state.ownedMasterworkOutfits||[]).includes(masterworkOutfitKey(gender,outfit.id))}
+function normalizeWardrobeOutfit(){
+  state.ownedMasterworkOutfits=Array.isArray(state.ownedMasterworkOutfits)?state.ownedMasterworkOutfits:[];
+  const outfit=wardrobeOutfits[state.gender]?.find(item=>item.id===(Number(state.outfit)||1));
+  if(outfit?.quality==='masterwork'&&!masterworkOutfitOwned(outfit))state.outfit=1;
+}
+async function selectOrBuyOutfit(id){
+  const gender=state.gender,outfit=wardrobeOutfits[gender]?.find(item=>item.id===Number(id));if(!outfit)return;
+  if(!masterworkOutfitOwned(outfit,gender)){
+    if((state.spiritJade||0)<masterworkOutfitPrice)return toast('靈玉不足');
+    const confirmed=await gameConfirm(`確定花費 ${masterworkOutfitPrice} 靈玉購買「${outfit.name}」？\n購買後將永久加入此角色的衣閣。`,{title:'購買天工絕品',confirmText:'購買'});if(!confirmed)return;
+    if(state.gender!==gender||(state.spiritJade||0)<masterworkOutfitPrice)return toast('無法完成購買');
+    state.spiritJade-=masterworkOutfitPrice;state.ownedMasterworkOutfits.push(masterworkOutfitKey(gender,outfit.id));toast(`已購得「${outfit.name}」`);
+  }
+  state.outfit=outfit.id;applyCharacterVisual();renderWardrobeSection('outfits',true);render();save();
+}
 const trueFormCatalog=[
   {id:'none',name:'返璞歸真',quality:'none',kind:'無品',description:'收斂真身異象，以本來面目示人。'},
   {id:'xuanjia-tortoise',name:'玄甲鎮岳',quality:'good',kind:'良品',image:'assets/qstyle-v2/true-form-xuanjia-tortoise-v1.png',description:'玄甲負岳而行，地脈金環緩轉，鎮住周身浮動元息。'},
@@ -395,6 +413,7 @@ defaults.bodyPathVersion=2;defaults.bodyTrainingLoad=0;defaults.bodyTrainingLoad
 defaults.bodyTrainingSystemVersion=3;defaults.bodyTrainingCharges=2;defaults.bodyTrainingChargeUpdatedAt=0;defaults.bodyFoundations={bone:0,blood:0,organs:0};defaults.bodyTrialFailures={};
 defaults.testSwordPathPillsMailVersion=0;defaults.testSwordEssenceMailVersion=0;defaults.righteousQiPillCount=0;defaults.evilQiPillCount=0;
 defaults.processedJadeGrantIds=[];
+defaults.ownedMasterworkOutfits=[];
 defaults.sectTechniqueMailVersion=0;
 defaults.sectRecords={};
 defaults.sectMerit=0;
@@ -479,6 +498,7 @@ function syncAscensionTitleUnlock(){
   return id;
 }
 function applyCharacterVisual(){
+  normalizeWardrobeOutfit();
   const hero=$('#heroCharacter');if(hero)hero.src=characterAsset();
   const outfit=wardrobeOutfits[state.gender]?.find(item=>item.id===(Number(state.outfit)||1));
   const heroArt=$('#heroArt');if(heroArt)heroArt.dataset.outfitEffect=outfit?.effect||'none';
@@ -2381,8 +2401,8 @@ function renderWardrobeSection(section,preserveScroll=false){
   const inner=$('#wardrobeInner');if(!inner)return;
   if(section==='outfits'){
     const g=state.gender==='男'?'male':'female',appearance=state.appearance||1;
-    replaceWardrobeContent(inner,`<div class="wardrobe-intro"><b>衣閣藏衣</b><span>品質依序為凡品、良品、靈品、玄品、天工絕品；服裝不影響人物屬性。</span></div><div class="wardrobe-showcase-strip" data-wardrobe-strip="outfits">${wardrobeOutfits[state.gender].map(outfit=>`<article class="wardrobe-card ${outfit.effect?'mythic':''} ${state.outfit===outfit.id?'selected':''}" data-quality="${outfit.quality}" data-outfit-effect="${outfit.effect||'none'}"><span class="wardrobe-preview"><img src="${appearanceAsset(state.gender,appearance,outfit.id)}" alt="${outfit.name}"></span><b>${outfit.name}</b><small class="item-quality">${outfit.kind}</small><button type="button" class="wardrobe-action" data-outfit-action="${outfit.id}">${state.outfit===outfit.id?'穿戴中':'穿戴'}</button></article>`).join('')}</div>`);
-    $$('[data-outfit-action]').forEach(button=>button.onclick=()=>{state.outfit=+button.dataset.outfitAction;applyCharacterVisual();renderWardrobeSection('outfits',true);save()});
+    replaceWardrobeContent(inner,`<div class="wardrobe-intro"><b>衣閣藏衣</b><span>天工絕品需花費靈玉永久購得；服裝不影響人物屬性。</span></div><div class="wardrobe-showcase-strip" data-wardrobe-strip="outfits">${wardrobeOutfits[state.gender].map(outfit=>{const owned=masterworkOutfitOwned(outfit),selected=owned&&state.outfit===outfit.id,canBuy=(state.spiritJade||0)>=masterworkOutfitPrice;return `<article class="wardrobe-card ${outfit.effect?'mythic':''} ${selected?'selected':''} ${owned?'':'locked'}" data-quality="${outfit.quality}" data-outfit-effect="${outfit.effect||'none'}"><span class="wardrobe-preview"><img src="${appearanceAsset(state.gender,appearance,outfit.id)}" alt="${outfit.name}"></span><b>${outfit.name}</b><small class="item-quality">${outfit.kind}${outfit.quality==='masterwork'&&!owned?' ・ 未擁有':''}</small><button type="button" class="wardrobe-action" data-outfit-action="${outfit.id}" ${!owned&&!canBuy?'disabled':''}>${selected?'穿戴中':owned?'穿戴':`${masterworkOutfitPrice} 靈玉`}</button></article>`}).join('')}</div>`);
+    $$('[data-outfit-action]').forEach(button=>button.onclick=()=>selectOrBuyOutfit(button.dataset.outfitAction));
     restoreWardrobeScroll(scrollTop);
     return;
   }
