@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>問道長生 v1・靈玉發放後台</title>
+  <style>
+    :root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;background:#14251f;color:#31483f;font-family:"Noto Serif TC","Microsoft JhengHei",serif}.panel{width:min(720px,100%);margin:auto;padding:24px;border:2px solid #bda36e;border-radius:16px;background:#f7f0df;box-shadow:0 18px 50px #0007}h1{margin:0 0 6px;color:#28695e}p{line-height:1.7}.notice{padding:10px 12px;border-left:4px solid #ba9147;background:#eee2c8}.grid{display:grid;gap:12px}.hidden{display:none!important}label{display:grid;gap:5px;font-weight:700}input,textarea,button{font:inherit}input,textarea{width:100%;padding:11px;border:1px solid #a99773;border-radius:8px;background:#fffdf5}textarea{min-height:80px;resize:vertical}button{padding:11px 18px;border:0;border-radius:22px;background:#3c8c7b;color:white;cursor:pointer}button.secondary{background:#776b55}button:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:10px;flex-wrap:wrap}.status{min-height:24px;margin-top:12px;font-weight:700}.error{color:#a03b35}.success{color:#257053}.record{padding:11px;border-bottom:1px solid #cfc1a4}.record b,.record small{display:block}.record small{color:#756b58;margin-top:4px}@media(max-width:520px){body{padding:10px}.panel{padding:16px}}
+  </style>
+</head>
+<body><main class="panel">
+  <p class="eyebrow">問道長生 v1・管理員專用</p><h1>靈玉發放後台</h1>
+  <p class="notice">只能使用已加入管理員清單的 Supabase 帳號。請勿在公用電腦儲存密碼。</p>
+  <section id="loginSection" class="grid">
+    <label>管理員 Email<input id="adminEmail" type="email" autocomplete="username"></label>
+    <label>密碼<input id="adminPassword" type="password" autocomplete="current-password"></label>
+    <button id="loginBtn">登入後台</button>
+  </section>
+  <section id="grantSection" class="grid hidden">
+    <div class="actions"><button id="logoutBtn" class="secondary">登出</button><button id="refreshBtn" class="secondary">更新近期紀錄</button></div>
+    <label>玩家 UID<input id="playerUid" placeholder="WD1-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" autocomplete="off"></label>
+    <label>發放靈玉數量<input id="jadeAmount" type="number" min="1" max="10000000" step="1"></label>
+    <label>訂單編號（不可重複）<input id="orderRef" maxlength="80" placeholder="例如 20260908-001"></label>
+    <label>備註<textarea id="grantNote" maxlength="300" placeholder="例如：玩家私訊購買 500 靈玉"></textarea></label>
+    <button id="issueBtn">確認發放</button>
+    <h2>近期發放</h2><div id="records"></div>
+  </section>
+  <p id="status" class="status"></p>
+</main><script src="admin.js"></script></body></html>

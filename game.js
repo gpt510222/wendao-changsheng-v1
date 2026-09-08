@@ -3,6 +3,7 @@ const $$ = s => [...document.querySelectorAll(s)];
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
+let jadeGrantSyncInFlight=false,currentPlayerUid='';
 
 const spiritRealms = ['聽息','引霞','凝曜','靈胎','化念','歸流','照虛','踏霄','遊穹','蛻凡','玄闕','天衡','玉宸','羅穹','神庭','寂空','渡厄','渾天','近聖','證聖','長明','道尊','天序'];
 const bodyRealms = ['塵軀','納勁','纏筋','玉骨','鳴髓','曜身','擎嶽','撼霄','鎮陸','渡星','寰甲','無量'];
@@ -393,6 +394,7 @@ defaults.swordPathVersion=0;defaults.swordPathMarks=[];defaults.swordTrialChoice
 defaults.bodyPathVersion=2;defaults.bodyTrainingLoad=0;defaults.bodyTrainingLoadUpdatedAt=0;
 defaults.bodyTrainingSystemVersion=3;defaults.bodyTrainingCharges=2;defaults.bodyTrainingChargeUpdatedAt=0;defaults.bodyFoundations={bone:0,blood:0,organs:0};defaults.bodyTrialFailures={};
 defaults.testSwordPathPillsMailVersion=0;defaults.testSwordEssenceMailVersion=0;defaults.righteousQiPillCount=0;defaults.evilQiPillCount=0;
+defaults.processedJadeGrantIds=[];
 defaults.sectTechniqueMailVersion=0;
 defaults.sectRecords={};
 defaults.sectMerit=0;
@@ -839,6 +841,32 @@ async function ensureLeaderboardSession(){
   let session=readLeaderboardSession();if(session?.access_token&&session?.user?.id&&session.expires_at>Date.now()+60000)return session;
   if(session?.refresh_token){try{const response=await fetch(`${leaderboardConfig.url}/auth/v1/token?grant_type=refresh_token`,{method:'POST',headers:leaderboardHeaders(),body:JSON.stringify({refresh_token:session.refresh_token})});if(response.ok)return storeLeaderboardSession(await response.json())}catch{}}
   const response=await fetch(`${leaderboardConfig.url}/auth/v1/signup`,{method:'POST',headers:leaderboardHeaders(),body:'{}'});if(!response.ok)throw new Error('anonymous sign-in failed');return storeLeaderboardSession(await response.json());
+}
+function publicPlayerUid(userId){return userId?`WD1-${String(userId).toUpperCase()}`:''}
+async function registerFormalPlayer(session){
+  const publicUid=publicPlayerUid(session?.user?.id);if(!publicUid)return '';
+  const payload={user_id:session.user.id,public_uid:publicUid,player_name:(state.name||'無名修士').trim().slice(0,20),release_channel:'v1'};
+  const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?on_conflict=user_id`,{method:'POST',headers:{...leaderboardHeaders(session.access_token),Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});
+  if(!response.ok)throw new Error('player registration failed');currentPlayerUid=publicUid;return publicUid;
+}
+async function markJadeGrantClaimed(session,id){
+  return fetch(`${leaderboardConfig.url}/rest/v1/jade_grants?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}`,{method:'PATCH',headers:{...leaderboardHeaders(session.access_token),Prefer:'return=minimal'},body:JSON.stringify({status:'claimed',claimed_at:new Date().toISOString()})});
+}
+async function syncJadeGrants({notify=true}={}){
+  if(jadeGrantSyncInFlight||!state.name)return 0;jadeGrantSyncInFlight=true;
+  try{
+    const session=await ensureLeaderboardSession();await registerFormalPlayer(session);
+    const query=`user_id=eq.${encodeURIComponent(session.user.id)}&status=eq.pending&select=id,amount,order_ref,note,created_at&order=created_at.asc`;
+    const response=await fetch(`${leaderboardConfig.url}/rest/v1/jade_grants?${query}`,{headers:leaderboardHeaders(session.access_token)});if(!response.ok)throw new Error('grant lookup failed');
+    const grants=await response.json(),processed=new Set(Array.isArray(state.processedJadeGrantIds)?state.processedJadeGrantIds:[]);let gained=0;
+    for(const grant of grants){const amount=Math.max(0,Math.floor(Number(grant.amount)||0));if(!processed.has(grant.id)&&amount>0){state.spiritJade=(state.spiritJade||0)+amount;processed.add(grant.id);gained+=amount;state.processedJadeGrantIds=[...processed].slice(-500);save()}await markJadeGrantClaimed(session,grant.id)}
+    if(gained){render();if(notify)toast(`靈玉發放已入帳・+${formatLargeNumber(gained)} 靈玉`)}return gained;
+  }catch{return 0}finally{jadeGrantSyncInFlight=false}
+}
+async function refreshPlayerUidDisplay(){
+  const value=$('#playerUidValue'),button=$('#copyPlayerUidBtn'),hint=$('#playerUidHint');if(!value||!button)return;
+  value.textContent='正在取得……';button.disabled=true;
+  try{const session=await ensureLeaderboardSession();const uid=await registerFormalPlayer(session);value.textContent=uid;button.disabled=!uid;hint.textContent='購買靈玉時，請將此 UID 提供給開發者。'}catch{value.textContent='暫時無法取得 UID';hint.textContent='請確認網路後再次開啟設定。'}
 }
 function ascensionLeaderboardKey(a=normalizeAscension()){return a.ascended?`${Math.max(1,Number(a.ascendedAt)||Date.now())}:${a.route}`:''}
 function leaderboardVersionValue(){const key=ascensionLeaderboardKey();return key?`${leaderboardConfig.gameVersion}|A:${key}`:leaderboardConfig.gameVersion}
@@ -1319,7 +1347,7 @@ async function startGame() {
   if(away>0&&state.cultivationAwakened) { const gain=state.spiritPathOpened?offlineCultivationGain(savedLast,now):0,swordGain=offlineSwordEssenceGain(away);addAura(away*auraRate());state.swordEssence+=toBigInt(swordGain);runSettlementTick(away);if(state.spiritPathOpened)addCultivation(gain,true);setTimeout(()=>{if(sessionOnline)showOfflineRewards(offlineBefore,away*5)},180); }
   else if(clockRollback)setTimeout(()=>toast('偵測到時間異常，本次不結算離線收益'),250);
   else if(!clockOkay&&location.protocol!=='file:')setTimeout(()=>toast('無法取得可信時間，已暫停離線與每日結算'),250);
-  tickStart=gameNow();processEncounterTriggers(0);render();save();
+  tickStart=gameNow();processEncounterTriggers(0);render();save();syncJadeGrants();
 }
 function updateCreator() {
   const g=createGender==='男'?'male':'female';
@@ -2414,6 +2442,7 @@ function openSettings() {
   $('#deleteConfirmInput').value=''; $('#deleteError').textContent='';
   $('#deletePhraseHint').textContent=`${state.name}/刪除`;
   showSettingsSection('#settingsMain');
+  refreshPlayerUidDisplay();syncJadeGrants();
 }
 function openHelp(){
   $('#gameMenu').classList.add('hidden');renderHelp('cultivation');$('#helpModal').classList.remove('hidden');
@@ -2748,6 +2777,7 @@ $('#leaderboardBtn').onclick=openLeaderboard;
 $('#helpBtn').onclick=openHelp;
 $$('[data-help-tab]').forEach(button=>button.onclick=()=>renderHelp(button.dataset.helpTab));
 $('#settingsCloseBtn').onclick=()=>$('#settingsModal').classList.add('hidden');
+$('#copyPlayerUidBtn').onclick=async()=>{if(!currentPlayerUid)return;try{await navigator.clipboard.writeText(currentPlayerUid);toast('UID 已複製')}catch{toast('複製失敗，請長按 UID 複製')}};
 $('#helpCloseBtn').onclick=()=>$('#helpModal').classList.add('hidden');
 $('#marketButton').onclick=openMarket;
 $('#mailButton').onclick=openMailbox;
@@ -2839,6 +2869,7 @@ setInterval(updatePracticeTimers,1000);
 setInterval(updateDivineRoamingTimer,1000);
 setInterval(()=>{const today=dateKey()||'local';if(today!==lastScriptureDayKey){lastScriptureDayKey=today;if(!$('#marketModal').classList.contains('hidden'))renderMarket(currentMarketTab);if(currentFeature==='cave'&&currentCaveView==='brew')renderBrewProduction($('#caveInner'));if(currentFeature==='sect'&&currentSectView==='shop')renderSectShop()}},1000);
 setInterval(()=>{if(sessionOnline&&!document.hidden)syncTrustedTime()},600000);
+setInterval(()=>{if(sessionOnline&&!document.hidden)syncJadeGrants()},60000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!suppressSave)save()});
 window.addEventListener('pagehide',()=>{if(!suppressSave)save()});
 async function initializeAssetCache(){
