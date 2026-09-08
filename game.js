@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260908-49';
+window.WENDAO_BUILD='20260908-50';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -890,7 +890,7 @@ async function registerFormalPlayer(session,retryAuth=true){
   if(!session?.user?.id)return '';
   const existingResponse=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?user_id=eq.${encodeURIComponent(session.user.id)}&select=public_uid&limit=1`,{headers:leaderboardHeaders(session.access_token)});
   if(existingResponse.status===401&&retryAuth)return registerFormalPlayer(await ensureLeaderboardSession(true),false);
-  if(existingResponse.ok){const [existing]=await existingResponse.json();if(existing?.public_uid){currentPlayerUid=existing.public_uid;localStorage.setItem(accountRecoveryConfig.boundUidKey,currentPlayerUid);return currentPlayerUid}if(localStorage.getItem(accountRecoveryConfig.boundUidKey)){clearTransferredDeviceData();throw new Error('account transferred')}}
+  if(existingResponse.ok){const [existing]=await existingResponse.json();if(existing?.public_uid){currentPlayerUid=existing.public_uid;localStorage.setItem(accountRecoveryConfig.boundUidKey,currentPlayerUid);return currentPlayerUid}if(localStorage.getItem(accountRecoveryConfig.boundUidKey)||storedRecoveryCode()){clearTransferredDeviceData();throw new Error('account transferred')}}
   const publicUid=publicPlayerUid(session.user.id);
   const payload={user_id:session.user.id,public_uid:publicUid,player_name:(state.name||'無名修士').trim().slice(0,20),release_channel:'v1'};
   const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?on_conflict=user_id`,{method:'POST',headers:{...leaderboardHeaders(session.access_token),Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});
@@ -898,7 +898,7 @@ async function registerFormalPlayer(session,retryAuth=true){
   if(!response.ok)throw new Error('player registration failed');currentPlayerUid=publicUid;localStorage.setItem(accountRecoveryConfig.boundUidKey,currentPlayerUid);return publicUid;
 }
 function clearTransferredDeviceData(){if(suppressSave)return;suppressSave=true;sessionOnline=false;clearTimeout(battleTimer);clearSwordTrialAdvance();clearTimeout(recoveryBackupTimer);battle=null;stopAllBgm();sessionStorage.setItem(accountRecoveryConfig.transferNoticeKey,'1');localStorage.removeItem(accountRecoveryConfig.codeKey);localStorage.removeItem(accountRecoveryConfig.boundUidKey);localStorage.removeItem(leaderboardConfig.sessionKey);localStorage.removeItem(saveKey);location.reload()}
-async function verifyAccountOwnership(){const boundUid=localStorage.getItem(accountRecoveryConfig.boundUidKey),session=readLeaderboardSession();if(!boundUid||!state.name||!session?.user?.id||accountOwnershipCheckInFlight||document.hidden)return;accountOwnershipCheckInFlight=true;try{const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?user_id=eq.${encodeURIComponent(session.user.id)}&select=public_uid&limit=1`,{headers:leaderboardHeaders(session.access_token)});if(response.status===401){await ensureLeaderboardSession(true);return}if(!response.ok)return;const [account]=await response.json();if(!account||account.public_uid!==boundUid)clearTransferredDeviceData()}catch{}finally{accountOwnershipCheckInFlight=false}}
+async function verifyAccountOwnership(){const boundUid=localStorage.getItem(accountRecoveryConfig.boundUidKey),hasRecoveryCode=!!storedRecoveryCode();let session=readLeaderboardSession();if(!state.name||!session?.user?.id||!boundUid&&!hasRecoveryCode||accountOwnershipCheckInFlight||document.hidden)return;accountOwnershipCheckInFlight=true;try{let response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?user_id=eq.${encodeURIComponent(session.user.id)}&select=public_uid&limit=1`,{headers:leaderboardHeaders(session.access_token)});if(response.status===401){session=await ensureLeaderboardSession(true);response=await fetch(`${leaderboardConfig.url}/rest/v1/player_accounts?user_id=eq.${encodeURIComponent(session.user.id)}&select=public_uid&limit=1`,{headers:leaderboardHeaders(session.access_token)})}if(!response.ok)return;const [account]=await response.json();if(!account||boundUid&&account.public_uid!==boundUid){clearTransferredDeviceData();return}if(!boundUid&&account.public_uid)localStorage.setItem(accountRecoveryConfig.boundUidKey,account.public_uid)}catch{}finally{accountOwnershipCheckInFlight=false}}
 function storedRecoveryCode(){return localStorage.getItem(accountRecoveryConfig.codeKey)||''}
 function normalizeRecoveryCode(value){const compact=String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(!compact.startsWith('WDR1')||compact.length!==28)return '';return `WDR1-${compact.slice(4,10)}-${compact.slice(10,16)}-${compact.slice(16,22)}-${compact.slice(22,28)}`}
 function generateRecoveryCode(){const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',bytes=crypto.getRandomValues(new Uint8Array(24)),body=[...bytes].map(value=>alphabet[value%alphabet.length]).join('');return `WDR1-${body.slice(0,6)}-${body.slice(6,12)}-${body.slice(12,18)}-${body.slice(18,24)}`}
@@ -1391,6 +1391,7 @@ function showOfflineRewards(before,seconds){
 }
 async function startGame() {
   finishPause();sessionOnline=true;
+  await verifyAccountOwnership();if(suppressSave)return;
   const savedLast=state.lastSave||0,savedTrusted=state.lastTrustedTime||0;
   trustedClockReady=location.protocol==='file:';
   const clockOkay=await syncTrustedTime(),now=gameNow(),clockRollback=(savedTrusted&&now+120000<savedTrusted)||(savedLast&&savedLast>now+120000);
@@ -2944,7 +2945,7 @@ setInterval(()=>{if(sessionOnline&&!document.hidden)syncTrustedTime()},600000);
 setInterval(()=>{if(sessionOnline&&!document.hidden)syncJadeGrants()},60000);
 setInterval(verifyAccountOwnership,30000);
 window.addEventListener('online',verifyAccountOwnership);
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&!suppressSave)save()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&!suppressSave)save();else if(!document.hidden)verifyAccountOwnership()});
 window.addEventListener('pagehide',()=>{if(!suppressSave)save()});
 async function initializeAssetCache(){
   if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return;
