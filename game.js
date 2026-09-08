@@ -1,5 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
+window.WENDAO_BUILD='20260908-45';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -902,7 +903,7 @@ async function recoveryRpc(name,body){const session=await ensureLeaderboardSessi
 async function uploadRecoveryBackup(code=storedRecoveryCode()){if(!code||recoveryBackupInFlight||!state.name)return;recoveryBackupInFlight=true;try{await recoveryRpc('save_recovery_backup',{p_recovery_hash:await recoveryCodeHash(code),p_save_data:recoverySaveData()})}finally{recoveryBackupInFlight=false}}
 function scheduleRecoveryBackup(){if(!storedRecoveryCode()||!state.name||recoveryBackupTimer)return;recoveryBackupTimer=setTimeout(()=>{recoveryBackupTimer=0;uploadRecoveryBackup().catch(()=>{})},15000)}
 function refreshRecoveryCodeDisplay(){const code=storedRecoveryCode(),value=$('#recoveryCodeValue'),create=$('#createRecoveryCodeBtn'),copy=$('#copyRecoveryCodeBtn');if(value)value.textContent=code||'尚未建立';if(create)create.textContent=code?'重新產生恢復碼':'建立恢復碼';if(copy)copy.disabled=!code}
-async function createRecoveryCode(){if(recoveryBackupInFlight)throw new Error('存檔正在備份，請稍後再試');const prior=storedRecoveryCode();if(prior&&!await gameConfirm('重新產生後，舊恢復碼會立即失效。確定繼續？',{title:'重新產生恢復碼',confirmText:'確認產生'}))return;const code=generateRecoveryCode();await uploadRecoveryBackup(code);localStorage.setItem(accountRecoveryConfig.codeKey,code);refreshRecoveryCodeDisplay();toast('恢復碼已建立，請立即妥善保存')}
+async function createRecoveryCode(){if(recoveryBackupInFlight)throw new Error('存檔正在備份，請稍後再試');const button=$('#createRecoveryCodeBtn'),hint=$('#recoveryCodeHint'),prior=storedRecoveryCode();if(prior&&!await gameConfirm('重新產生後，舊恢復碼會立即失效。確定繼續？',{title:'重新產生恢復碼',confirmText:'確認產生'}))return;button.disabled=true;hint.textContent='正在建立恢復碼並備份角色……';try{const code=generateRecoveryCode();await uploadRecoveryBackup(code);localStorage.setItem(accountRecoveryConfig.codeKey,code);refreshRecoveryCodeDisplay();hint.textContent='已完成雲端備份；請將恢復碼保存在安全的位置。';toast('恢復碼已建立，請立即妥善保存')}catch(error){hint.textContent=`建立失敗：${error.message}`;throw error}finally{button.disabled=false}}
 function openAccountRecovery(event){event?.stopPropagation();$('#accountRecoveryInput').value='';$('#accountRecoveryError').textContent='';$('#accountRecoveryModal').classList.remove('hidden')}
 async function recoverAccount(){const input=$('#accountRecoveryInput'),button=$('#accountRecoveryConfirm'),code=normalizeRecoveryCode(input.value);if(!code){$('#accountRecoveryError').textContent='恢復碼格式不正確';return}if(state.name&&!await gameConfirm('恢復帳號會以雲端存檔取代此裝置目前的角色。確定繼續？',{title:'取代目前角色',confirmText:'確認恢復',danger:true}))return;button.disabled=true;$('#accountRecoveryError').textContent='正在取回帳號……';try{const {data}=await recoveryRpc('recover_formal_account',{p_recovery_hash:await recoveryCodeHash(code)});if(!data||typeof data!=='object'||!data.name)throw new Error('找不到可恢復的角色存檔');localStorage.setItem(saveKey,JSON.stringify(data));leaderboardKnownPower=null;leaderboardKnownName='';leaderboardKnownAscensionKey='';const nextCode=generateRecoveryCode();localStorage.setItem(accountRecoveryConfig.codeKey,nextCode);state={...defaults,...data};await uploadRecoveryBackup(nextCode);location.reload()}catch(error){$('#accountRecoveryError').textContent=error.message;button.disabled=false}}
 async function markJadeGrantClaimed(session,id){
@@ -2836,7 +2837,7 @@ $$('[data-help-tab]').forEach(button=>button.onclick=()=>renderHelp(button.datas
 $('#settingsCloseBtn').onclick=()=>$('#settingsModal').classList.add('hidden');
 $('#copyPlayerUidBtn').onclick=async()=>{if(!currentPlayerUid)return;try{await navigator.clipboard.writeText(currentPlayerUid);toast('UID 已複製')}catch{toast('複製失敗，請長按 UID 複製')}};
 $('#titleRecoveryBtn').onclick=openAccountRecovery;
-$('#createRecoveryCodeBtn').onclick=()=>createRecoveryCode().catch(error=>toast(error.message));
+$('#createRecoveryCodeBtn').onclick=()=>createRecoveryCode().catch(()=>{});
 $('#copyRecoveryCodeBtn').onclick=async()=>{const code=storedRecoveryCode();if(!code)return;try{await navigator.clipboard.writeText(code);toast('恢復碼已複製')}catch{toast('複製失敗，請長按恢復碼複製')}};
 $('#accountRecoveryCancel').onclick=()=>$('#accountRecoveryModal').classList.add('hidden');
 $('#accountRecoveryConfirm').onclick=recoverAccount;

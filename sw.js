@@ -4,6 +4,7 @@ const CORE_ASSETS = __CORE_ASSETS__;
 const VISUAL_ASSETS = __VISUAL_ASSETS__;
 const CACHE_NAME = 'wendao-revision-cache-v1';
 const REVISION_PARAM = '__wendao_revision';
+const NETWORK_FIRST_ASSETS = new Set(['index.html','game.js','partner-system.js','styles.css','q-style.css']);
 
 const absoluteUrl = path => new URL(path, self.registration.scope).href;
 const revisionRequest = path => {
@@ -73,7 +74,7 @@ self.addEventListener('fetch', event => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
     const key = revisionRequest(path);
-    if (request.mode !== 'navigate') {
+    if (request.mode !== 'navigate' && !NETWORK_FIRST_ASSETS.has(path)) {
       const cached = await cache.match(key);
       if (cached) return cached;
     }
