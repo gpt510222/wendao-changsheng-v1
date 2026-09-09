@@ -724,6 +724,7 @@ html.entry-transition body::after{content:"";position:fixed;z-index:9999;inset:0
 .partner-choice-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px 14px 14px;background:#f2ead8}
 .partner-choice-panel.encounter-choices{margin:0}
 .partner-choice-panel.encounter-choices button{padding:10px 12px;border:1px solid #a99169;border-radius:9px;background:#e8dfcd;color:#48665d;text-align:left}
+.partner-reaction-panel{grid-template-columns:1fr}.partner-reaction-panel .jade-button{width:100%;margin:0;padding:11px}.partner-reaction-story .partner-dialogue-card>small{display:block;margin-bottom:3px;color:#8b7351;letter-spacing:.04em}.partner-player-dialogue-art{filter:drop-shadow(0 10px 10px #32574e66)}
 .partner-name-panel{grid-template-columns:minmax(0,1fr) auto;align-items:end}
 .partner-name-panel .jade-button{width:auto;margin:0;white-space:nowrap}
 .partner-encounter-card>#encounterCloseBtn{display:block;margin:10px auto 14px}
