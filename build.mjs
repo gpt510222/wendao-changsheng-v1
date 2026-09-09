@@ -77,7 +77,12 @@ const coreNames = new Set([
 ]);
 const images = Object.keys(revisions).filter(path => /\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(path));
 const core = images.filter(path => coreNames.has(path.split("/").at(-1)));
-const visuals = images.filter(path => !core.includes(path));
+// Wardrobe portraits are large and only one is needed at a time. They still receive
+// revisions and normal runtime caching, but are not bulk-prefetched on mobile.
+const visuals = images.filter(path =>
+  !core.includes(path) &&
+  !path.startsWith("assets/qstyle-v2/mainline/protagonist-wardrobe/")
+);
 let worker = await readFile("dist/client/sw.js", "utf8");
 worker = worker
   .replace("__ASSET_REVISIONS__", JSON.stringify(revisions))

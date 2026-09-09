@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260910-73';
+window.WENDAO_BUILD='20260910-74';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -243,7 +243,12 @@ const mortalMainline=[
   ['九鎖天闕','九節全明，你必須逐一斬斷封天連結。','dragon','九鎖陣靈'],['天門絕域','凡人的安全與後世的道路，在天門前迎來最後一戰。','human','守界司之主']
 ].map((row,index)=>({id:index+1,name:row[0],summary:row[1],race:row[2],boss:row[3],realm:Math.floor(index/2)+1,image:`assets/qstyle-v2/mainline/realm-${Math.floor(index/2)+1}.png`}));
 const mainlinePortraits={guardian:'assets/qstyle-v2/mainline/portrait-guardian.png',observer:'assets/qstyle-v2/mainline/portrait-observer.png',officer:'assets/qstyle-v2/mainline/portrait-officer.png',healer:'assets/qstyle-v2/mainline/portrait-healer.png',lord:'assets/qstyle-v2/mainline/portrait-lord.png',founder:'assets/qstyle-v2/mainline/portrait-founder.png'};
-function mainlineProtagonistPortrait(){return `assets/qstyle-v2/mainline/portrait-protagonist-${state.gender==='男'?'male':'female'}-v2.png`}
+function mainlineProtagonistPortrait(){
+  const gender=state.gender==='男'?'male':'female';
+  const appearance=Math.max(1,Math.min(3,Number(state.appearance)||1));
+  const outfit=Math.max(1,Math.min(8,Number(state.outfit)||1));
+  return `assets/qstyle-v2/mainline/protagonist-wardrobe/${gender}-a${appearance}-o${outfit}.webp`;
+}
 const mainlineMaterials=[['玄紋絲','xuansi'],['玄靈絹','xuanjuan'],['玄紋革','xuanpi'],['玄靈革','lingpi'],['玄風革','fengpi'],['玄靈玉','lingyu'],['玄靈晶','lingjing']];
 const mainlineMaterialDescriptions={xuansi:'由九鎖首通或神念遠遊所得的玄蠶絲抽理而成，絲質輕韌且容易承載細小陣紋，是製作冠的主要素材。',xuanjuan:'將九鎖首通或遠遊所得玄靈絲線反覆浸潤、織成的柔韌絹材，是製作法衣的主要素材。',xuanpi:'取自九鎖首通或神念遠遊所遇妖獸的靈化表皮，是製作護腕的主要素材。',lingpi:'由九鎖首通或遠遊所得靈獸皮革鞣製而成，是製作腰帶的主要素材。',fengpi:'九鎖首通或神念遠遊時尋得的御風靈皮，是製作靴履的主要素材。',lingyu:'由九鎖首通或神念遠遊所得的溫潤玉料，是製作玉佩的主要素材。',lingjing:'在九鎖靈流交會處形成的透明晶體，可由首通或神念遠遊取得，是製作指環的主要素材。'};
 mainlineMaterials.forEach(([name,key])=>itemCatalog[`main-material-${key}`]={name,image:`assets/qstyle-v2/mainline/material-${key}.png`,description:mainlineMaterialDescriptions[key],count:`mainlineMaterial_${key}`,usable:false,giftable:false,sellPrice:1});
