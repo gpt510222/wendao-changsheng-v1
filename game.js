@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260909-59';
+window.WENDAO_BUILD='20260909-60';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -1620,7 +1620,7 @@ function clearWardrobeLayers(){
 let featureRecoveryFrame=0;
 function resetFeatureContentLayer(){
   const description=$('#featureDescription');if(!description)return;
-  description.classList.remove('wardrobe-cleared');
+  description.classList.remove('wardrobe-cleared');description.classList.toggle('root-panel-active',currentFeature==='root');
   description.style.removeProperty('visibility');description.style.removeProperty('opacity');description.style.removeProperty('filter');description.style.removeProperty('transform');
 }
 function recoverFeaturePanel(page){
@@ -2321,7 +2321,8 @@ const elementData = {
   earth:{label:'土',root:'earthRoot',art:'earthArt',icon:'assets/qstyle-v2/element-earth.png'}
 };
 function renderSpiritRootPanel(view='root') {
-  $('#featureDescription').innerHTML='<div class="root-tabs"><button data-root-view="root">靈根</button><button data-root-view="pool">靈池</button></div><div id="rootInner"></div>';
+  $('#featureDescription').classList.add('root-panel-active');
+  $('#featureDescription').innerHTML='<div class="root-panel-shell"><div class="root-tabs"><button data-root-view="root">靈根</button><button data-root-view="pool">靈池</button></div><div id="rootInner"></div></div>';
   $$('.root-tabs button').forEach(b=>b.onclick=()=>renderSpiritRootView(b.dataset.rootView));
   renderSpiritRootView(view);
 }
