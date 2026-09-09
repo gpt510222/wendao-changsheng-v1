@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260908-51';
+window.WENDAO_BUILD='20260909-52';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -13,6 +13,7 @@ const bodyRealms = ['塵軀','納勁','纏筋','玉骨','鳴髓','曜身','擎�
 const swordRealms = ['啟鋒','藏芒','養刃','聽劍','凝魄','御鋒','劍罡','心劍','劍域','裂空','星痕','月魄','日輪','萬刃','無鋒','歸一','斬界','太初','道鋒','劫劍','無極','劍尊','天劍'];
 const maxSpiritLevel=spiritRealms.length*10-1,maxBodyLevel=bodyRealms.length*10-1,maxSwordLevel=swordRealms.length*10-1,mortalSwordMaxLevel=89,swordTrialMaxStage=90;
 const mortalBodyMaxLevel=89;
+const noviceCultivationNeed=300n;
 const realmGrowthMultipliers=[1.20,1.80,2.50,3.30,4.20,5.20,6.30,7.50,8.80,10.20,11.70,13.30,15.00,16.80,18.70,20.70,22.80,25.00,27.30,29.70,32.20,34.80,37.50];
 const realmEfficiencyMultipliers=(()=>{const values=[3,4.5,6.9,10.5,15.6,22.5,33,48,69,99];while(values.length<spiritRealms.length)values.push(Math.round(values.at(-1)*2.3));return values})();
 const spiritRootRanks = ['廢品','凡品','下品','中品','良品','超品','上品','極品','完美','先天','凡仙','仙品','歸元','天心','三清','六禦','玄門','全真','淨明','天道'];
@@ -1130,13 +1131,13 @@ function updateMainlineButton(){
   button.classList.toggle('hidden',!awakened);button.classList.toggle('active',awakened&&currentFeature==='mainline');button.disabled=!awakened;button.setAttribute('aria-hidden',String(!awakened));
 }
 function renderNoviceCultivation(){
-  const awakened=!!state.cultivationAwakened,ready=!awakened&&state.free>=600n,progress=Math.min(100,Number(state.free)/6),novice=$('#noviceCultivation'),button=$('#manualCultivateBtn');
+  const awakened=!!state.cultivationAwakened,ready=!awakened&&state.free>=noviceCultivationNeed,progress=Math.min(100,Number(state.free)/Number(noviceCultivationNeed)*100),novice=$('#noviceCultivation'),button=$('#manualCultivateBtn');
   novice.classList.toggle('hidden',awakened);novice.classList.toggle('breakthrough-ready',ready);
   $$('.path-actions').forEach(actions=>actions.classList.toggle('hidden',!awakened));
   $$('.feature-tab').forEach(tab=>{tab.classList.toggle('novice-locked',!awakened);tab.setAttribute('aria-disabled',String(!awakened))});
   updateMainlineButton();
   if(awakened)return;
-  $('#noviceProgressText').textContent=ready?'修為已足，點擊突破踏入聽息一層':`入門進度 ${formatLargeNumber(state.free)} / 600`;
+  $('#noviceProgressText').textContent=ready?'修為已足，點擊突破踏入聽息一層':`入門進度 ${formatLargeNumber(state.free)} / ${formatLargeNumber(noviceCultivationNeed)}`;
   $('#noviceProgressBar').style.width=`${progress}%`;
   button.classList.toggle('breakthrough-button',ready);
   if(ready){button.disabled=breakthroughInProgress;button.setAttribute('aria-label','突破至聽息一層');}
@@ -1146,11 +1147,11 @@ function finishManualCultivation(){
   clearInterval(manualCultivationTimer);manualCultivationTimer=null;manualCultivationStartedAt=0;
   if(state.cultivationAwakened)return;
   const amount=BigInt(rate());state.free+=amount;state.totalEarned+=amount;playTone();render();save();
-  if(state.free<600n)toast(`吐納完成・修為+${formatLargeNumber(amount)}`);
+  if(state.free<noviceCultivationNeed)toast(`吐納完成・修為+${formatLargeNumber(amount)}`);
 }
 function beginManualCultivation(){
   if(state.cultivationAwakened||manualCultivationStartedAt||breakthroughInProgress)return;
-  if(state.free>=600n)return beginFirstBreakthrough();
+  if(state.free>=noviceCultivationNeed)return beginFirstBreakthrough();
   manualCultivationStartedAt=performance.now();const button=$('#manualCultivateBtn');button.disabled=true;button.classList.add('channeling');
   const update=()=>{const elapsed=performance.now()-manualCultivationStartedAt,left=Math.max(0,5-Math.floor(elapsed/1000));$('#manualCultivateLabel').textContent='吐納中';$('#manualCultivateHint').textContent=`尚需 ${left} 秒`;$('#manualCultivateBar').style.width=`${Math.min(100,elapsed/50)}%`;if(elapsed>=5000)finishManualCultivation()};
   update();manualCultivationTimer=setInterval(update,80);
@@ -1163,12 +1164,12 @@ function openFirstPathChoice(){
 function chooseFirstPath(path){
   if(!cultivationPathMeta[path])return;
   if(state.firstPath){$('#firstPathModal')?.classList.remove('show');render();save();return}
-  state.free=state.free>=600n?state.free-600n:0n;state.firstPath=path;state.activePath=path;state.cultivationAwakened=true;state.tutorialCompleted=true;state.spiritPathOpened=path==='spirit';state.swordPathOpened=path==='sword';state.bodyPathOpened=path==='body';
+  state.free=state.free>=noviceCultivationNeed?state.free-noviceCultivationNeed:0n;state.firstPath=path;state.activePath=path;state.cultivationAwakened=true;state.tutorialCompleted=true;state.spiritPathOpened=path==='spirit';state.swordPathOpened=path==='sword';state.bodyPathOpened=path==='body';
   state.swordMoves=path==='body'?['body-origin']:['origin'];breakthroughInProgress=false;$('#heroArt').classList.remove('breakthrough-absorb');$('#firstPathModal')?.classList.remove('show');render();startPathBgm(path);save();toast(`已踏入${cultivationPathMeta[path].name}之路・其餘兩道可於兼修開啟`);
   if(path==='sword')setTimeout(()=>openPrimarySwordView('sword'),350);
 }
 function beginFirstBreakthrough(){
-  if(state.cultivationAwakened||state.free<600n||breakthroughInProgress)return;
+  if(state.cultivationAwakened||state.free<noviceCultivationNeed||breakthroughInProgress)return;
   breakthroughInProgress=true;$('#manualCultivateBtn').disabled=true;$('#heroArt').classList.add('breakthrough-absorb');playBreakthroughSound();
   setTimeout(()=>{breakthroughInProgress=false;$('#heroArt').classList.remove('breakthrough-absorb');openFirstPathChoice()},2100);
 }
