@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260909-61';
+window.WENDAO_BUILD='20260909-62';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -1620,8 +1620,12 @@ function clearWardrobeLayers(){
 let featureRecoveryFrame=0;
 function resetFeatureContentLayer(){
   const description=$('#featureDescription');if(!description)return;
-  description.classList.remove('wardrobe-cleared');description.classList.toggle('root-panel-active',currentFeature==='root');
+  description.classList.remove('wardrobe-cleared');description.classList.toggle('root-panel-active',currentFeature==='root');description.classList.toggle('fixed-subtabs',['root','cave','bag','sect','arts','experience'].includes(currentFeature));
   description.style.removeProperty('visibility');description.style.removeProperty('opacity');description.style.removeProperty('filter');description.style.removeProperty('transform');
+}
+function resetFeatureSubView(page){
+  if(page==='root')currentRootView='root';else if(page==='cave'){currentCaveView='dwelling';currentStudyView='codex'}else if(page==='sect')currentSectView='home';else if(page==='arts')currentArtsView='sect';else if(page==='experience')currentExperienceView='overview';else if(page==='bag'){currentCharacterView='equipment';currentWardrobeView='outfits';bagUpgradeDetailsOpen=false}
+  for(const key of interfaceScrollMemory.keys())if(key.startsWith(`${page}|`))interfaceScrollMemory.delete(key);
 }
 function recoverFeaturePanel(page){
   cancelAnimationFrame(featureRecoveryFrame);featureRecoveryFrame=requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -1645,12 +1649,14 @@ function toggleFeature(button) {
   if(!state.cultivationAwakened)return toast('完成新手教程、踏入聽息一層後開啟此功能');
   if(currentFeature==='bag')clearWardrobeLayers();
   if(currentFeature===page) {
+    resetFeatureSubView(page);
     currentFeature=null;
     $('#featurePanel').classList.add('hidden');
     $('#gameScreen').classList.remove('feature-open');
     $$('.feature-tab').forEach(x=>x.classList.remove('active'));
     return;
   }
+  if(currentFeature)resetFeatureSubView(currentFeature);
   currentFeature=page;
   setFeaturePanelStandalone(false);
   resetFeatureContentLayer();
@@ -2403,6 +2409,7 @@ function bindBagItemActivation(inner){
 function renderBagView(view) {
   $$('.bag-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.bagView===view));
   const inner=$('#bagInner'); if(!inner)return;
+  inner.classList.toggle('nested-subtabs',view==='character'||view==='wardrobe');
   if(view==='bag') {
     const items=syncBagItemOrder(Object.entries(itemCatalog).filter(([,item])=>(state[item.count]||0)>0)),capacity=bagCapacity(),used=bagUsedSlots(),cost=bagUpgradeCost();
     const itemButtons=items.flatMap(([key,item])=>{const category=bagItemSortProfile(key,item).category,total=Math.max(0,Math.floor(Number(state[item.count])||0)),stacks=bagSlotsForAmount(total);return Array.from({length:stacks},(_,index)=>{const amount=Math.min(bagStackLimit,total-index*bagStackLimit);return `<button class="inventory-item" data-bag-item="${key}" data-bag-category="${category}" aria-label="${bagCategoryLabels[category]}・${item.name}・第${index+1}格・${amount}個"><img src="${item.image}" alt="${item.name}"><b>${formatLargeNumber(amount)}</b><small>${item.name}</small></button>`})}).join('');
