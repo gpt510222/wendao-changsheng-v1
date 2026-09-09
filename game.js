@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260909-54';
+window.WENDAO_BUILD='20260909-55';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -465,7 +465,7 @@ let marketTreasurePage=1;
 const marketFloorLevels=[0,20,40,60,80];
 const chineseFloorNames=['一','二','三','四','五'];
 let marketFloorNoticeTimer=null,lastScriptureDayKey='',marketPurchaseOffer=null,marketPurchaseQuantity=1,currentMailId=null;
-let bgmTheme=null,battle=null,battleTimer=null,swordTrialAdvanceTimer=null,swordTrialCountdownTimer=null,pauseStartedAt=null,sessionOnline=false,confirmResolver=null,prologueTimer=null,tribulationPillUseCount=0,tribulationLocked=false,tribulationTimers=[];
+let bgmTheme=null,battle=null,battleTimer=null,swordTrialAdvanceTimer=null,swordTrialCountdownTimer=null,pauseStartedAt=null,sessionOnline=false,confirmResolver=null,prologueTimer=null,offlineRewardTimer=null,tribulationPillUseCount=0,tribulationLocked=false,tribulationTimers=[];
 let itemModalKey=null,itemModalQuantity=1,sellItemKey=null,sellItemQuantity=1;
 let identityChangeItemKey=null;
 let swordPathChoiceConfirming=false;
@@ -761,7 +761,7 @@ function setTribulationLock(locked){
 }
 function blockDuringTribulation(event){
   if(!tribulationLocked)return;
-  if(event.target.closest?.('#tribulationExit'))return;
+  if(event.target.closest?.('#tribulationExit,#offlineModalClose'))return;
   event.preventDefault();event.stopImmediatePropagation();
 }
 ['click','dblclick','pointerdown','pointerup','touchstart','touchend','keydown','keyup'].forEach(type=>document.addEventListener(type,blockDuringTribulation,true));
@@ -1391,8 +1391,14 @@ function showOfflineRewards(before,seconds){
   const hours=Math.floor(seconds/3600),minutes=Math.floor(seconds%3600/60),secs=seconds%60;$('#offlineDuration').textContent=`離線時間 ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
   $('#offlineRewardList').innerHTML=rows.length?rows.map(([label,amount])=>`<div><span>${label}</span><b>+${formatLargeNumber(amount)}</b></div>`).join(''):'<p>本次離線時間不足，尚未產生收益。</p>';$('#offlineModal').classList.remove('hidden');
 }
+function closeOfflineRewards(){
+  clearTimeout(offlineRewardTimer);offlineRewardTimer=null;$('#offlineModal').classList.add('hidden');
+}
+function scheduleOfflineRewards(before,seconds){
+  clearTimeout(offlineRewardTimer);offlineRewardTimer=setTimeout(()=>{offlineRewardTimer=null;if(sessionOnline)showOfflineRewards(before,seconds)},180);
+}
 async function startGame() {
-  finishPause();sessionOnline=true;
+  if(sessionOnline)return;finishPause();sessionOnline=true;
   await verifyAccountOwnership();if(suppressSave)return;
   const savedLast=state.lastSave||0,savedTrusted=state.lastTrustedTime||0;
   trustedClockReady=location.protocol==='file:';
@@ -1409,7 +1415,7 @@ async function startGame() {
   $$('.feature-tab').forEach(x=>x.classList.remove('active'));
   applyCharacterVisual();
   const away=clockOkay&&!clockRollback?Math.max(0,Math.floor((now-savedLast)/5000)):0;
-  if(away>0&&state.cultivationAwakened) { const gain=state.spiritPathOpened?offlineCultivationGain(savedLast,now):0,swordGain=offlineSwordEssenceGain(away);addAura(away*auraRate());state.swordEssence+=toBigInt(swordGain);runSettlementTick(away);if(state.spiritPathOpened)addCultivation(gain,true);setTimeout(()=>{if(sessionOnline)showOfflineRewards(offlineBefore,away*5)},180); }
+  if(away>0&&state.cultivationAwakened) { const gain=state.spiritPathOpened?offlineCultivationGain(savedLast,now):0,swordGain=offlineSwordEssenceGain(away);addAura(away*auraRate());state.swordEssence+=toBigInt(swordGain);runSettlementTick(away);if(state.spiritPathOpened)addCultivation(gain,true);scheduleOfflineRewards(offlineBefore,away*5); }
   else if(clockRollback)setTimeout(()=>toast('偵測到時間異常，本次不結算離線收益'),250);
   else if(!clockOkay&&location.protocol!=='file:')setTimeout(()=>toast('無法取得可信時間，已暫停離線與每日結算'),250);
   tickStart=gameNow();processEncounterTriggers(0);render();save();syncJadeGrants();
@@ -2483,7 +2489,7 @@ function finishPause(){
   pauseStartedAt=null;document.documentElement.classList.remove('entry-transition');$$('.entry-arriving').forEach(element=>element.classList.remove('entry-arriving'));updateMainlineButton();
 }
 function forceOffline(){
-  if(suppressSave||!state.name||pauseStartedAt!==null)return;pauseStartedAt=gameNow();sessionOnline=false;clearTimeout(battleTimer);clearSwordTrialAdvance();battle=null;if(tribulationLocked)cleanupTribulationScene();
+  if(suppressSave||!state.name||pauseStartedAt!==null)return;pauseStartedAt=gameNow();sessionOnline=false;clearTimeout(battleTimer);clearSwordTrialAdvance();closeOfflineRewards();battle=null;if(tribulationLocked)cleanupTribulationScene();
   $('#mailboxModal').classList.add('hidden');$('#mailDetailModal').classList.add('hidden');
   $('#battleModal').classList.add('hidden');$('#tribulationModal').classList.add('hidden');$('#itemModal').classList.add('hidden');$('#sellModal').classList.add('hidden');$('#offlineModal').classList.add('hidden');$('#marketModal').classList.add('hidden');$('#marketPurchaseModal').classList.add('hidden');$('#gameMenu').classList.add('hidden');$('#settingsModal').classList.add('hidden');$('#helpModal').classList.add('hidden');stopAllBgm();show('#titleScreen');$('#titleHint').textContent='已離線・點擊螢幕重新進入';save();
 }
@@ -2877,7 +2883,8 @@ $('#itemMaxBtn').onclick=()=>{const item=itemCatalog[itemModalKey];if(item)itemM
 bindQuantityInput('itemQuantity',{minimum:1,maximum:()=>{const item=itemCatalog[itemModalKey];return Math.max(1,item?state[item.count]||0:1)},onChange:value=>itemModalQuantity=value,refresh:updateItemQuantity});
 $('#sellCancelBtn').onclick=closeSellModal;
 $('#sellConfirmBtn').onclick=confirmSellItem;
-$('#offlineModalClose').onclick=()=>$('#offlineModal').classList.add('hidden');
+$('#offlineModalClose').onclick=closeOfflineRewards;
+$('#offlineModal').onclick=event=>{if(event.target===$('#offlineModal'))closeOfflineRewards()};
 $('#confirmModalCancel').onclick=()=>closeGameConfirm(false);
 $('#confirmModalAccept').onclick=()=>closeGameConfirm(true);
 $('#identityChangeCancel').onclick=closeIdentityChangeModal;
