@@ -4,7 +4,7 @@ const CORE_ASSETS = __CORE_ASSETS__;
 const VISUAL_ASSETS = __VISUAL_ASSETS__;
 const CACHE_NAME = 'wendao-revision-cache-v1';
 const REVISION_PARAM = '__wendao_revision';
-const NETWORK_FIRST_ASSETS = new Set(['index.html','game.js','partner-system.js','styles.css','q-style.css']);
+const NETWORK_FIRST_ASSETS = new Set(['index.html','game.js','production-rows.js','partner-system.js','styles.css','q-style.css','production-fix.css']);
 
 const absoluteUrl = path => new URL(path, self.registration.scope).href;
 const revisionRequest = path => {

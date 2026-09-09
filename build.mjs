@@ -8,7 +8,7 @@ await mkdir("dist/client/assets/qstyle-v2", { recursive: true });
 await mkdir("dist/server", { recursive: true });
 await mkdir("dist/.openai", { recursive: true });
 
-for (const file of ["index.html", "styles.css", "q-style.css", "partner-system.js", "game.js", "admin.html", "admin.js"]) {
+for (const file of ["index.html", "styles.css", "q-style.css", "production-fix.css", "partner-system.js", "game.js", "production-rows.js", "admin.html", "admin.js"]) {
   await cp(file, `dist/client/${file}`);
 }
 const gameAssets = [
@@ -68,7 +68,7 @@ for (const path of outputFiles) {
   const key = relative(clientRoot, path).split(sep).join("/");
   revisions[key] = createHash("sha256").update(await readFile(path)).digest("hex").slice(0, 16);
 }
-const shell = ["index.html", "styles.css", "q-style.css", "partner-system.js", "game.js"];
+const shell = ["index.html", "styles.css", "q-style.css", "production-fix.css", "partner-system.js", "game.js", "production-rows.js"];
 const coreNames = new Set([
   "title-bg.png", "main-bg.png", "main-bg-sword-v1.png", "main-bg-body-v1.png",
   "female-outfit-1.png", "male-outfit-1.png", "female-outfit-2.png", "male-outfit-2.png",
