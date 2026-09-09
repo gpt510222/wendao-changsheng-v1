@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260909-60';
+window.WENDAO_BUILD='20260909-61';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -1759,12 +1759,12 @@ function sectInfo(){return sectCatalog.find(x=>x.star===state.sectStar)}
 function selectedSectTask(){return sectTasks.find(x=>x.id===state.sectTask)}
 function sectTaskPathGain(task=selectedSectTask()){return task?1+Math.floor(task.need/40):1}
 function processSectYears(){
-  if(!state.sect||!state.sectJoinedAt)return;
+  if(!state.sect||!state.sectJoinedAt)return false;
   const total=Math.floor((gameNow()-state.sectJoinedAt)/900000),delta=Math.max(0,total-state.sectYearsProcessed);
-  if(!delta)return;
+  if(!delta)return false;
   state.sectYearsProcessed=total;
   const task=selectedSectTask(),pathGain=delta*(task?sectTaskPathGain(task):1);if(state.sectFaction==='正')state.righteousness+=pathGain;else state.evilQi+=pathGain;
-  if(task){const sectGain=Math.floor(task.gain*delta*(1+sectExperienceBonus()));state.sectMerit+=sectGain;state.sectContribution+=sectGain;state.spiritStone+=task.stone*delta;state.prestige+=task.prestige*delta;syncCurrentSectRecord()}
+  if(task){const sectGain=Math.floor(task.gain*delta*(1+sectExperienceBonus()));state.sectMerit+=sectGain;state.sectContribution+=sectGain;state.spiritStone+=task.stone*delta;state.prestige+=task.prestige*delta;syncCurrentSectRecord()}return true;
 }
 function sectDescription(){
   const index=npcSeed(),places=['青峰疊翠的雲海深處','千瀑交織的靈谷之中','終年星輝垂落的高原','古木遮天的幽靜山脈','浩蕩天河環繞的浮島','地火與寒泉交會的秘境','萬丈孤峰之巔','遠離塵世的上古洞天','雷雲不散的天外山門','潮汐靈脈匯聚的海崖','日月同輝的仙家福地'];
@@ -1807,7 +1807,7 @@ function renderSectPanel(view='home'){
   }
   const tabs=[['home','門派主殿'],['npcs','門人'],['practice','練功房'],['tasks','執事堂'],['learning','傳功殿'],['shop','功勳堂'],['journal','門派見聞']];
   $('#featureDescription').innerHTML=`<div class="sect-tabs">${tabs.map(([k,n])=>`<button data-sect-view="${k}" class="${k===view?'active':''}">${n}</button>`).join('')}</div><div id="sectInner"></div>`;
-  $$('.sect-tabs button').forEach(b=>b.onclick=()=>renderSectPanel(b.dataset.sectView));const tabBar=$('.sect-tabs'),activeTab=tabBar?.querySelector('.active');if(tabBar){tabBar.addEventListener('wheel',event=>{if(Math.abs(event.deltaY)<=Math.abs(event.deltaX))return;tabBar.scrollLeft+=event.deltaY;event.preventDefault()},{passive:false});if(activeTab)tabBar.scrollLeft=activeTab.offsetLeft-tabBar.offsetLeft-(tabBar.clientWidth-activeTab.clientWidth)/2}renderSectView(view);renderSectPathIncome();save();
+  $$('.sect-tabs button').forEach(b=>b.onclick=()=>{renderSectView(b.dataset.sectView);renderSectPathIncome()});const tabBar=$('.sect-tabs'),activeTab=tabBar?.querySelector('.active');if(tabBar){tabBar.addEventListener('wheel',event=>{if(Math.abs(event.deltaY)<=Math.abs(event.deltaX))return;tabBar.scrollLeft+=event.deltaY;event.preventDefault()},{passive:false});if(activeTab)tabBar.scrollLeft=activeTab.offsetLeft-tabBar.offsetLeft-(tabBar.clientWidth-activeTab.clientWidth)/2}renderSectView(view);renderSectPathIncome();save();
 }
 function renderSectView(view){
   currentSectView=view;const inner=$('#sectInner');if(!inner)return;
@@ -2213,7 +2213,7 @@ function renderCavePanel(view='dwelling',preserveScroll=false){
   const description=$('#featureDescription'),savedScrollTop=preserveScroll?description.scrollTop:0,savedScrollLeft=preserveScroll?description.scrollLeft:0,savedTabScroll=preserveScroll?description.querySelector('.cave-tabs')?.scrollLeft||0:0;
   const tabs=[['dwelling','靈脈'],['production','資源生產'],['alchemy','丹房'],['forge','器室'],['brew','釀坊'],['study','書房']];if(state.partnerSystem?.established)tabs.push(['partner','道侶']);else if(view==='partner')view='dwelling';
   description.innerHTML=`<div class="cave-tabs">${tabs.map(([key,label])=>`<button data-cave-view="${key}" class="${key===view?'active':''}">${label}</button>`).join('')}</div><div id="caveInner"></div>`;
-  $$('.cave-tabs button').forEach(b=>b.onclick=()=>renderCavePanel(b.dataset.caveView));
+  $$('.cave-tabs button').forEach(b=>b.onclick=()=>renderCaveView(b.dataset.caveView));
   const tabBar=$('.cave-tabs'),activeTab=$('.cave-tabs .active');if(tabBar){tabBar.addEventListener('wheel',event=>{if(Math.abs(event.deltaY)<=Math.abs(event.deltaX))return;tabBar.scrollLeft+=event.deltaY;event.preventDefault()},{passive:false});if(activeTab)tabBar.scrollLeft=activeTab.offsetLeft-tabBar.offsetLeft-(tabBar.clientWidth-activeTab.clientWidth)/2}
   renderCaveView(view);
   if(preserveScroll){description.scrollTop=savedScrollTop;description.scrollLeft=savedScrollLeft;if(tabBar)tabBar.scrollLeft=savedTabScroll}
@@ -2257,10 +2257,10 @@ function renderStudyView(inner,view=currentStudyView){
   $$('[data-study-view]').forEach(button=>button.onclick=()=>renderStudyView(inner,button.dataset.studyView));
 }
 function renderCaveView(view){
-  if(view==='partner'&&state.partnerSystem?.established)return partnerRenderCave($('#caveInner'));
   currentCaveView=view;
   $$('.cave-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.caveView===view));
   const inner=$('#caveInner');if(!inner)return;
+  if(view==='partner'&&state.partnerSystem?.established)return partnerRenderCave(inner);
   if(!['dwelling','production'].includes(view)){
     if(view==='alchemy'){renderAlchemyProduction(inner);return}if(view==='forge'){renderForgeProduction(inner);return}if(view==='brew'){renderBrewProduction(inner);return}
     if(view==='study'){renderStudyView(inner);return}
@@ -2952,7 +2952,7 @@ new MutationObserver(()=>{if(currentFeature==='experience')queueMicrotask(render
 document.addEventListener('contextmenu',event=>{if(event.target.closest?.('img'))event.preventDefault()});
 document.addEventListener('dragstart',event=>{if(event.target.closest?.('img'))event.preventDefault()});
 $('#manualCultivateBtn').onclick=beginManualCultivation;
-setInterval(()=>{if($('#gameScreen').classList.contains('active')){if(state.cultivationAwakened){const immortal=normalizeAscension().currentRealm==='immortal';addAura(auraRate());const swordGain=state.swordPathOpened?swordEssenceRate():0;if(state.swordPathOpened){state.swordEssence+=BigInt(swordGain);if(!immortal&&state.activePath==='sword')renderPrimarySanctum()}runSettlementTick();processSectYears();processEncounterTriggers(5000);if(state.spiritPathOpened)addCultivation(rate(),immortal||state.activePath!=='spirit');if(!immortal&&state.activePath==='sword'&&swordGain>0&&isPureCultivationView())toast(`劍元+${formatLargeNumber(swordGain)}`,'cultivation')}processDivineRoaming();if(currentFeature==='root')renderSpiritRootView(currentRootView);if(currentFeature==='cave'&&state.cultivationAwakened&&currentCaveView!=='study')renderCavePanel(currentCaveView,true);if(currentFeature==='sect'&&currentSectView!=='npcs')renderSectPanel(currentSectView);if(currentFeature==='arts')updateArtsLive();if(currentFeature==='spiritPrimary'||currentFeature==='experience'&&currentExperienceView==='spiritSide')renderQiDestination();else if(currentFeature==='experience'&&currentExperienceView==='overview')renderExperiencePanel('overview');else if(currentFeature==='experience'&&currentExperienceView==='realm')renderExperiencePanel('realm');tickStart=gameNow()}},5000);
+setInterval(()=>{if($('#gameScreen').classList.contains('active')){let sectChanged=false;if(state.cultivationAwakened){const immortal=normalizeAscension().currentRealm==='immortal';addAura(auraRate());const swordGain=state.swordPathOpened?swordEssenceRate():0;if(state.swordPathOpened){state.swordEssence+=BigInt(swordGain);if(!immortal&&state.activePath==='sword')renderPrimarySanctum()}runSettlementTick();sectChanged=processSectYears();processEncounterTriggers(5000);if(state.spiritPathOpened)addCultivation(rate(),immortal||state.activePath!=='spirit');if(!immortal&&state.activePath==='sword'&&swordGain>0&&isPureCultivationView())toast(`劍元+${formatLargeNumber(swordGain)}`,'cultivation')}processDivineRoaming();if(currentFeature==='root')renderSpiritRootView(currentRootView);if(currentFeature==='cave'&&state.cultivationAwakened&&currentCaveView!=='study')renderCaveView(currentCaveView);if(currentFeature==='sect'&&currentSectView!=='npcs'&&sectChanged)renderSectView(currentSectView);if(currentFeature==='arts')updateArtsLive();if(currentFeature==='spiritPrimary'||currentFeature==='experience'&&currentExperienceView==='spiritSide')renderQiDestination();else if(currentFeature==='experience'&&currentExperienceView==='overview')renderExperiencePanel('overview');else if(currentFeature==='experience'&&currentExperienceView==='realm')renderExperiencePanel('realm');tickStart=gameNow()}},5000);
 setInterval(()=>{if($('#gameScreen').classList.contains('active'))$('#tickBar').style.width=Math.min(100,(gameNow()-tickStart)/50)+'%'},50);
 setInterval(()=>{if($('#gameScreen').classList.contains('active'))$('#yearsElapsed').textContent=`${experiencedYears().toLocaleString()} 年`},1000);
 setInterval(updatePracticeTimers,1000);
