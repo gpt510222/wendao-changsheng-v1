@@ -1,4 +1,4 @@
--- 問道長生 v1：一次性帳號恢復碼、雲端備份與帳號移轉
+-- 問道長生 v1：永久帳號恢復碼、雲端備份與帳號移轉
 create table if not exists public.account_recovery_backups (
   user_id uuid primary key references auth.users(id) on delete cascade,
   recovery_hash text not null unique check (recovery_hash ~ '^[0-9a-f]{64}$'),
@@ -32,7 +32,6 @@ begin
   select user_id,save_data into old_user,recovered_save from public.account_recovery_backups where recovery_hash=p_recovery_hash for update;
   if old_user is null then raise exception 'recovery code not found'; end if;
   if old_user = new_user then
-    delete from public.account_recovery_backups where user_id=old_user;
     return recovered_save;
   end if;
   delete from public.jade_grants where user_id=new_user;
@@ -42,7 +41,7 @@ begin
   update public.player_accounts set user_id=new_user,updated_at=now() where user_id=old_user;
   update public.player_rankings set user_id=new_user where user_id=old_user;
   update public.jade_grants set user_id=new_user where user_id=old_user;
-  delete from public.account_recovery_backups where user_id=old_user;
+  update public.account_recovery_backups set user_id=new_user,updated_at=now() where user_id=old_user;
   return recovered_save;
 end $$;
 
