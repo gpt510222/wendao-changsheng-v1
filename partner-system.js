@@ -8,50 +8,50 @@ const partnerPersonalities={warm:'溫和',reserved:'清冷',free:'灑脫',devote
 const partnerRoutes={qi:'練氣',sword:'淬劍',body:'煉體'};
 const partnerStateNames={rest:'休憩',cultivate:'修煉',seclusion:'閉關',travel:'遊歷'};
 const partnerStoryData=[
- {intro:'山林雨後，石階旁一道血跡蜿蜒入林。循跡而去，一名陌生修士倚樹而坐，仍警惕地護著懷中玉符。',steps:[
-  {speaker:'旁白',text:'血跡尚新，林中卻沒有求救聲。',choices:[['循著血跡查看',0,0],['暫且離去',0,0,'leave']]},
-  {speaker:'陌生修士',text:'「若是來取我性命，便不必多言。」對方氣息紊亂，手仍未離開兵刃。',choices:[['替其療傷',0,0],['先辨傷勢與來路',0,0],['移至避雨處',0,0]]},
-  {speaker:'陌生修士',text:'傷勢稍穩，對方取出一枚空白身份玉牌，似在等你問名。',name:true},
-  {speaker:'同道人',text:'「今日之事，我會記得。」',choices:[['等到傷勢穩定再走',0,0],['留下傷藥',0,0],['替其尋一處藏身地',0,0]]}
+ {intro:'雨才歇，山林裡滿是濕潤的草木氣。石階邊那串血跡一路沒入林深，偶爾被雨水沖淡，卻始終沒有斷。',steps:[
+  {speaker:'旁白',text:'血還溫著，林中卻靜得反常。受傷的人沒有呼救，像是寧願撐到最後，也不肯讓誰循聲找到。',choices:[['循著血跡查看',0,0],['暫且離去',0,0,'leave']]},
+  {speaker:'陌生修士',text:'樹下的人聽見腳步，勉強抬起兵刃：「若是來取我性命，就快些。我今日……實在沒力氣陪你繞彎子。」',choices:[['替其療傷',0,0],['先辨傷勢與來路',0,0],['移至避雨處',0,0]]},
+  {speaker:'陌生修士',text:'傷口總算止了血。對方倚回樹幹，從懷中摸出一枚空白玉牌，遲疑片刻才遞來：「總不能讓你一直叫我『那個傷患』。」',name:true},
+  {speaker:'同道人',text:'「我不擅長欠人情。」對方把玉牌仔細收好，聲音仍虛弱，卻不再冷硬，「但今日這份，我會好好記著。」',choices:[['等到傷勢穩定再走',0,0],['留下傷藥',0,0],['替其尋一處藏身地',0,0]]}
  ]},
- {intro:'坊市人潮中，那道曾在山林見過的身影停在舊地圖攤前。若當日未曾相救，這便是你們真正的初見。',steps:[
-  {speaker:'同道人',text:'「我在找一條失落的古道，你可曾聽聞？」',choices:[['陪同尋找',1,1],['給出線索',1,1],['由其自行處理',0,-1]]},
-  {speaker:'同道人',text:'事情告一段落後，對方忽然問起你這些年的修行。',choices:[['尚好，只是偶有疲憊',1,0],['修行而已，無甚可說',0,1],['發生不少事，慢慢說來',1,0]]}
+ {intro:'坊市正是最熱鬧的時辰。你在舊地圖攤前又看見那道身影——對方捏著一張殘圖，已和攤主爭了半刻鐘。若當日未曾入林，這便是你們真正的初見。',steps:[
+  {speaker:'同道人',text:'對方認出你，眼裡掠過一點意外，隨即把殘圖攤開：「來得正好。這條古道像是被人從世上抹去了，你可曾聽過？」',choices:[['陪同尋找',1,1],['給出線索',1,1],['由其自行處理',0,-1]]},
+  {speaker:'同道人',text:'忙完時，坊市已點起燈。對方買了兩碗熱湯，將其中一碗推給你：「別只說古道了。你呢？這些年過得還好嗎？」',choices:[['尚好，只是偶有疲憊',1,0],['修行而已，無甚可說',0,1],['發生不少事，慢慢說來',1,0]]}
  ]},
- {intro:'離開坊市後，你們恰巧同赴一處古道。山風很長，沉默也並不難熬。',steps:[
-  {speaker:'同道人',text:'「既然同路，要不要一起走？」',choices:[['並肩同行',1,0],['約定彼此照應但各走各的',0,1],['獨自上路',-1,0]]},
+ {intro:'離開坊市後，你們才發現彼此要去的是同一條古道。山路很長，偶爾一句閒談，偶爾各自沉默，竟都不讓人覺得難熬。',steps:[
+  {speaker:'同道人',text:'對方走出幾步又回頭，故作隨意地問：「既然同路……要不要一起？至少遇上岔路時，多一個人可以怪。」',choices:[['並肩同行',1,0],['約定彼此照應但各走各的',0,1],['獨自上路',-1,0]]},
   {speaker:'旁白',text:'途中有凡人受困崖下，而天色正迅速轉壞。',choices:[['立刻救人',0,1],['先察地勢再救',0,2],['不涉此因果',0,-1]]},
-  {speaker:'同道人',text:'崖後藏有一株罕見靈草，兩人同時看見。',choices:[['交由對方處置',1,0],['平分所得',1,2],['各憑本事',0,1],['留作共同路資',1,2]]}
+  {speaker:'同道人',text:'救人後，你們在崖縫裡同時看見一株罕見靈草。視線撞在一起，對方先笑了：「這倒難辦了。你說，怎麼分？」',choices:[['交由對方處置',1,0],['平分所得',1,2],['各憑本事',0,1],['留作共同路資',1,2]]}
  ]},
- {intro:'某日洞府外傳來叩門聲。來者沒有傳訊，只帶著一壺尚溫的茶。',steps:[
-  {speaker:'同道人',text:'「路過此地，想起你在這裡。」',choices:[['請入洞府',2,1],['在門外小坐',1,1],['今日不便相見',0,1,'skip']]},
-  {speaker:'同道人',text:'「若有一日，我把性命託在你手上呢？」',choices:[['我會接住',1,1],['先問清因果，再與你共擔',0,2],['你的路仍該由你自己走',0,1]]},
-  {speaker:'同道人',text:'「你覺得我們如今算是什麼？」',choices:[['可信之人',0,1],['難得的知己',1,1],['我在意的人',2,0],['只是同道',-1,0]]}
+ {intro:'某日洞府外傳來三聲叩門。來者沒有事先傳訊，只提著一壺尚溫的茶，衣角還沾著趕路時的風塵。',steps:[
+  {speaker:'同道人',text:'「其實也不算路過。」對方看了一眼手中的茶，難得有些不自在，「只是走到附近，忽然很想見你。」',choices:[['請入洞府',2,1],['在門外小坐',1,1],['今日不便相見',0,1,'skip']]},
+  {speaker:'同道人',text:'茶喝到一半，對方忽然停下轉動杯盞的手：「我問個不吉利的。若有一天，我真的只能把性命交給你……你會怎麼辦？」',choices:[['我會接住',1,1],['先問清因果，再與你共擔',0,2],['你的路仍該由你自己走',0,1]]},
+  {speaker:'同道人',text:'沉默了一會兒，對方低頭笑了笑：「我們好像已經走得很近了。可若要你親口說……你覺得，我們如今算是什麼？」',choices:[['可信之人',0,1],['難得的知己',1,1],['我在意的人',2,0],['只是同道',-1,0]]}
  ]},
- {intro:'修煉台上靈氣翻湧，你行功至緊要處時，對方恰好來訪。',steps:[
-  {speaker:'同道人',text:'「你氣息不穩。若信得過我，我替你守住靈台。」',choices:[['全心相託',2,2,'rely'],['只請其護法',1,0],['婉拒相助',-1,0]]},
-  {speaker:'同道人',text:'危機過後，對方把手收回，神情仍有些緊繃。',choices:[['道謝',1,0],['握住那隻尚未放鬆的手',2,0],['談論方才的功法',0,1],['當作無事發生',-1,0]]},
-  {speaker:'同道人',text:'「下一次，也別什麼都自己扛。」',choices:[['答應',2,0,'rely'],['我會斟酌',1,1],['不必擔心我',-1,0],['你也是',1,1]]}
+ {intro:'修煉台上靈氣驟然倒捲。你行功正至最凶險的一關，經脈卻先亂了章法；偏偏此時，熟悉的腳步停在禁制之外。',steps:[
+  {speaker:'同道人',text:'對方只看一眼便變了臉色，伸出的手卻停在半寸之外：「你氣息亂了。若信我，就點一下頭——剩下的交給我。」',choices:[['全心相託',2,2,'rely'],['只請其護法',1,0],['婉拒相助',-1,0]]},
+  {speaker:'同道人',text:'危機過去後，對方慢慢收回手，指節仍因用力而泛白。嘴上什麼都沒說，那口壓了許久的氣卻終於吐了出來。',choices:[['道謝',1,0],['握住那隻尚未放鬆的手',2,0],['談論方才的功法',0,1],['當作無事發生',-1,0]]},
+  {speaker:'同道人',text:'臨走前，對方背對著你整理衣袖，聲音悶悶的：「下次別又一個人硬撐。修長生又不是比誰更會逞強。」',choices:[['答應',2,0,'rely'],['我會斟酌',1,1],['不必擔心我',-1,0],['你也是',1,1]]}
  ]},
- {intro:'坊市傳聞有人在險地見過熟悉的身影，此後數百年再無音訊。',steps:[
+ {intro:'坊市裡忽然傳來消息：有人曾在險地見過那道熟悉的身影。消息只有寥寥幾句，此後數百年，再沒有任何回音。',steps:[
   {speaker:'旁白',text:'消息真假難辨，你決定如何做？',choices:[['親自尋找',1,1,'care'],['託人四處打聽',1,0,'care'],['留下只有對方看得懂的訊息',1,1,'care'],['相信對方自會歸來',0,1]]},
-  {speaker:'同道人',text:'你終於在歸途遇見對方。那人安然無恙，只是風塵滿身：「若再有一次，你還會找嗎？」',choices:[['會，因為是你',2,0],['至少要知道你是否平安',1,1],['若你不希望，我會尊重',0,2],['未必',-1,0]]}
+  {speaker:'同道人',text:'重逢那日，對方瘦了些，袖口也磨得發白。彼此對望許久，那人才啞著嗓子問：「若再來一次……明知可能找不到，你還會找我嗎？」',choices:[['會，因為是你',2,0],['至少要知道你是否平安',1,1],['若你不希望，我會尊重',0,2],['未必',-1,0]]}
  ]},
  {intro:'坊市酒樓裡，店家自然地把你們安排在同席，笑稱二位果然又一同來了。',steps:[
-  {speaker:'路人',text:'「二位道侶今日也照舊？」空氣忽然安靜。',choices:[['含笑不否認',2,0],['尚未到那一步',1,1,'possible'],['只是同行之人',-1,0],['看向對方，讓其回答',0,1]]},
-  {speaker:'同道人',text:'離開後，對方問：「這種事，應當由旁人來定嗎？」',choices:[['自然要兩人都願意',1,2],['稱呼而已，不必在意',0,0],['若是你，我並不排斥',2,1,'possible']]}
+  {speaker:'路人',text:'店家一邊斟酒一邊笑問：「二位道侶今日也照舊？」話音才落，你們同時看向彼此，誰也沒有立刻出聲。',choices:[['含笑不否認',2,0],['尚未到那一步',1,1,'possible'],['只是同行之人',-1,0],['看向對方，讓其回答',0,1]]},
+  {speaker:'同道人',text:'離開酒樓後，對方走得比平時慢了一些：「方才那個稱呼……我知道不該由旁人來定。可你聽見時，心裡真的一點波瀾也沒有嗎？」',choices:[['自然要兩人都願意',1,2],['稱呼而已，不必在意',0,0],['若是你，我並不排斥',2,1,'possible']]}
  ]},
  {intro:'沒有急事、沒有異象，也沒有需要交換的東西。對方只是在傍晚來到你的洞府。',steps:[
-  {speaker:'同道人',text:'「今日無事，只想來坐坐。」',choices:[['請其入內',2,0],['取茶對坐',1,1],['笑問是否當真無事',1,0],['繼續修煉',-1,1]]},
-  {speaker:'同道人',text:'談話兜轉回初見之日。原來許多細節，對方都還記得。',choices:[['我也記得',2,0],['那時不曾想會走到今日',1,1],['往事已遠',0,1]]},
-  {speaker:'同道人',text:'月上枝頭，對方起身告辭。',choices:[['有空再來',1,1,'welcome'],['送至洞府外',1,0],['道一聲珍重',0,1]]}
+  {speaker:'同道人',text:'「真的沒事。」對方在門前晃了晃空空的雙手，笑意很輕，「就是今日忽然覺得，一個人待著有些安靜，想來你這裡坐坐。」',choices:[['請其入內',2,0],['取茶對坐',1,1],['笑問是否當真無事',1,0],['繼續修煉',-1,1]]},
+  {speaker:'同道人',text:'談話不知怎麼繞回初見。對方竟連那日的雨聲、你衣袖沾到的泥，甚至你說話時皺眉的模樣都還記得。說到一半，自己先不好意思地停了。',choices:[['我也記得',2,0],['那時不曾想會走到今日',1,1],['往事已遠',0,1]]},
+  {speaker:'同道人',text:'月已上枝頭。對方起身走到門前，又回頭看了一眼，像是在等一句足以讓下次來訪顯得理所當然的話。',choices:[['有空再來',1,1,'welcome'],['送至洞府外',1,0],['道一聲珍重',0,1]]}
  ]},
  {intro:'古道將分岔。對方要獨自去一處危險秘境，這不是邀請，也不是試探。',steps:[
-  {speaker:'同道人',text:'「這一段路，我必須自己走。」',choices:[['尊重選擇，也說明牽掛',1,2],['坦言擔心',2,0],['堅持同行',1,-1],['只道一聲珍重',0,1]]},
+  {speaker:'同道人',text:'對方望著岔路盡頭，很久才開口：「這一段，我必須自己走。不是不信你……正因為是你，我才不想讓你替我背這份因果。」',choices:[['尊重選擇，也說明牽掛',1,2],['坦言擔心',2,0],['堅持同行',1,-1],['只道一聲珍重',0,1]]},
   {speaker:'旁白',text:'等待沒有回音的日子裡，你如何安置這份心？',choices:[['照常修行，為其留燈',1,2],['每隔一段歲月傳訊',1,1],['親赴入口等候',2,0],['不再等待',-2,0]]},
-  {speaker:'同道人',text:'多年後，那道身影終於從山霧裡走回來：「我回來了。」',choices:[['回來便好',2,1],['你的路，可曾走明白？',0,2],['下次先告訴我',1,1]]}
+  {speaker:'同道人',text:'多年後，山霧裡終於走出熟悉的身影。對方站到你面前，原先準備好的話似乎全忘了，只紅著眼睛笑了一下：「我回來了。還好……你也還在。」',choices:[['回來便好',2,1],['你的路，可曾走明白？',0,2],['下次先告訴我',1,1]]}
  ]},
- {intro:'夕陽落在洞府外。走過漫長歲月，有些話終究要由其中一人先說。',steps:[]}
+ {intro:'夕陽把兩人的影子拉得很長。走過這麼多年，你們已經熟悉彼此的沉默、倔強與不肯說出口的牽掛。有些話若今日仍不說，或許還能再等很多年；可對方不想再等了。',steps:[]}
 ];
 
 function partnerClamp(value){return Math.max(-5,Math.min(5,Math.round(Number(value)||0)))}
@@ -80,7 +80,16 @@ const partnerActionLines={
  '陪同尋找':'你收起自己的行程，決定陪對方把那條古道找完。','給出線索':'你將知道的線索逐一說明，讓對方少走一些彎路。','由其自行處理':'你把此事留給對方，沒有再涉入其中。','並肩同行':'你走到對方身旁，與其一同踏上古道。','約定彼此照應但各走各的':'你們約定沿途照應，卻仍各自保留自己的步調。','獨自上路':'你謝絕同行，選擇獨自走完這段路。','立刻救人':'你沒有遲疑，立刻向崖下受困之人伸出援手。','先察地勢再救':'你先看清山勢與落腳處，再穩妥地展開救援。','不涉此因果':'你沒有停步，任由這段因果留在身後。','交由對方處置':'你退開半步，把靈草的處置交給對方。','平分所得':'你提出平分靈草，讓這場相遇不欠彼此。','各憑本事':'你沒有相讓，只以各自本事決定靈草歸屬。','留作共同路資':'你提議將靈草留下，作為兩人接下來的共同路資。',
  '請入洞府':'你側身讓開洞府門口，請對方入內。','在門外小坐':'你在洞府外添了座位，與對方隔著暮色小坐。','今日不便相見':'你沒有開門，只隔著禁制婉拒了這次來訪。','全心相託':'你放開靈台防備，把最危險的一刻交給對方守護。','只請其護法':'你接受對方護法，卻仍保留最後一層心防。','婉拒相助':'你謝過好意，仍選擇獨自壓下紊亂氣息。','道謝':'你鄭重向對方道謝。','握住那隻尚未放鬆的手':'你沒有多說，只握住那隻仍然緊繃的手。','談論方才的功法':'你避開彼此的情緒，轉而談起方才運轉的功法。','當作無事發生':'你收回目光，像方才什麼都沒有發生。',
  '親自尋找':'你放下手邊之事，親自踏上尋人的路。','託人四處打聽':'你將消息送往各處，託可信之人代為打聽。','留下只有對方看得懂的訊息':'你在約定之地留下只有對方能讀懂的訊息。','相信對方自會歸來':'你沒有追尋，只替對方保留一條回來的路。','含笑不否認':'你只是含笑，沒有否認那聲「道侶」。','看向對方，讓其回答':'你沒有替兩人決定，只安靜地看向對方。','請其入內':'你推開洞府石門，請對方進來坐坐。','取茶對坐':'你取出茶盞，與對方安靜對坐。','笑問是否當真無事':'你笑著追問，對方是否真的只是來坐坐。','繼續修煉':'你沒有停下行功，只讓洞府重新歸於安靜。','送至洞府外':'你一路將對方送到洞府之外。',
- '尊重選擇，也說明牽掛':'你沒有阻攔，只坦白說出自己的牽掛。','坦言擔心':'你不再迂迴，直言自己無法不擔心。','堅持同行':'你拒絕留在原地，堅持要一同踏入秘境。','只道一聲珍重':'你壓下所有挽留，只留下一聲珍重。','照常修行，為其留燈':'你照常修行，卻始終為那個人留著一盞燈。','每隔一段歲月傳訊':'你每隔一段歲月便傳去訊息，不催促，只報平安。','親赴入口等候':'你親自守在秘境入口，任歲月從身旁流過。','不再等待':'你熄了那盞燈，決定不再等待。'
+ '尊重選擇，也說明牽掛':'「我不攔你。」你替對方理好被風吹亂的衣領，「但你要知道，從你踏進去的那一刻起，外面就會多一個牽掛你的人。」','坦言擔心':'「我知道你有非去不可的理由。」你沒有再繞彎子，「可我還是會怕。這句話，我不想瞞你。」','堅持同行':'「你可以不邀我，但不能替我決定。」你向那條岔路踏出一步，「這段路，我要陪你走。」','只道一聲珍重':'千言萬語到了唇邊，最後只剩一句：「珍重。我等你平安回來。」','照常修行，為其留燈':'你仍照常修行，只是每晚都在洞府門前添一盞燈。你不說在等誰，也從未讓它熄滅。','每隔一段歲月傳訊':'你隔些歲月便傳去一句近況，不催歸期，也不問答案，只讓對方知道：這裡一切都好，你也仍在。','親赴入口等候':'你在秘境入口結廬住下。春去秋來，你看過無數人進出，卻始終沒有錯認過任何一道背影。','不再等待':'你終於熄了門前那盞燈。黑暗落下時，心裡某個地方也跟著安靜了。',
+ '尚好，只是偶有疲憊':'你捧著熱湯暖了暖手，笑得有些無奈：「大抵還好。只是有些夜裡，也會累得不想再逞強。」','修行而已，無甚可說':'你垂眼看著碗中熱氣：「不過是修行、破境，再繼續走。沒什麼值得特意說的。」','發生不少事，慢慢說來':'「那可說來話長了。」你把熱湯往兩人中間挪了挪，「若你不趕時間，我便慢慢說給你聽。」',
+ '我會接住':'你沒有避開那雙眼睛：「我會接住。不是因為我不怕，而是因為那個人是你。」','先問清因果，再與你共擔':'「我會先問清楚你究竟闖了什麼禍。」你頓了頓，「問完，再和你一起擔。」','你的路仍該由你自己走':'「我能護你一時，卻不能替你走完自己的路。」你輕聲道，「真到了那一天，我希望你仍能先相信自己。」',
+ '可信之人':'你想了想才答：「是我敢把後背交出去的人。這份信任，對我來說已經很重了。」','難得的知己':'「是知己吧。」你看著杯中並排的倒影，「很多話不必說完，你也能懂的那一種。」','我在意的人':'你沒有再拿同道二字遮掩：「是我會惦記、會擔心，也會因為見到而高興的人。」','只是同道':'「只是同道。」你把語氣放得很平，像是在說服對方，也像在提醒自己。',
+ '答應':'「好，我答應你。」你認真看著對方，「下次撐不住時，我會記得我不是只有一個人。」','我會斟酌':'「我會試著改。」你沒有把話說滿，「至少下一次，我會先想起今日有人為我擔心成這樣。」','不必擔心我':'「不必為我擔心，我向來都能自己處理。」你說得輕描淡寫，卻看見對方眉心仍沒有鬆開。','你也是':'「這話也送給你。」你望著對方泛白的指節，「別只顧著接住我，你也可以有撐不住的時候。」',
+ '會，因為是你':'「會。」你幾乎沒有思索，「不是因為我喜歡尋人，是因為失去消息的那個人是你。」','至少要知道你是否平安':'「我未必要把你帶回來。」你緩緩吐出一口氣，「但至少，我得親眼知道你還平安。」','若你不希望，我會尊重':'「我會想找你。」你坦白道，「可若那真是你的選擇，我也會學著尊重——只是請你至少留一句平安。」','未必':'你沉默片刻，終究沒有給出安慰人的答案：「未必。不是每一次等待，都還有力氣重來。」',
+ '尚未到那一步':'你輕咳一聲，沒有急著撇清：「尚未到那一步……但也不是毫無可能。」','只是同行之人':'「店家誤會了。」你把酒盞推回桌上，「我們只是同行之人。」','自然要兩人都願意':'「自然不能由旁人定。」你放慢腳步，側過臉看向對方，「要你願意，也要我願意，才算數。」','稱呼而已，不必在意':'「不過是一句隨口的稱呼。」你笑了笑，「不必讓它擾了心境。」','若是你，我並不排斥':'你停下腳步，讓彼此都無法再假裝只是閒談：「若那個人是你，我並不排斥。」',
+ '我也記得':'「我也記得。」你接著說出一個連對方都以為早已被遺忘的細節，說完時，兩個人都笑了。','那時不曾想會走到今日':'「那時只覺得是萍水相逢。」你望向身旁的人，「哪裡想得到，一轉眼竟已一起走了這麼遠。」','往事已遠':'「都過去那麼久了。」你替兩人添了茶，語氣平靜，「記不記得，也不那麼重要了。」','有空再來':'「下次別再拿『路過』當藉口。」你倚著門笑道，「想來便來，我會替你留盞茶。」','道一聲珍重':'你站在原地沒有相送，只在石門合上前輕聲道：「珍重。夜路慢些走。」',
+ '回來便好':'你看著那張久違的臉，原先想好的責備一句也說不出口：「回來便好。其他的……等你歇好了再說。」','你的路，可曾走明白？':'你替對方拂去肩上的霧水：「我等的不是一句交代。只想問你，那條非走不可的路，可曾走明白了？」','下次先告訴我':'你眼眶發熱，話出口卻帶著幾分氣惱：「下次先告訴我。哪怕只有一句也好，別再讓我從旁人口中找你的生死。」',
+ '我願意':'你伸出手，掌心向上：「我願意。往後有風雨便一起擋，有好風景也不許一個人先看。」','仍選擇獨行':'你望著那隻等待已久的手，最終沒有握上去：「對不起。這條路，我還是想一個人走。」','記住這段歲月':'你把未能說成承諾的心意收好，輕聲道：「我會記得。往後想起你時，也會記得我們曾真心同行。」'
 };
 function partnerPlayerChoiceText(label){if(partnerActionLines[label])return partnerActionLines[label];const text=String(label||'').replace(/[。！？]$/,'');return `「${text}。」`}
 const partnerReactionBeats=[
@@ -96,28 +105,28 @@ const partnerReactionBeats=[
 ];
 const partnerReactionVoices={
  warm:{
-  close:['對方怔了片刻，眉眼慢慢柔和：「好。你這句話，我會放在心上。」','對方沒有掩飾笑意：「有你這樣回答，我便安心多了。」','對方輕輕頷首：「那我也不與你客氣了。我會同樣記得你的心意。」'],
-  thoughtful:['對方仔細想過才回答：「你沒有急著許諾，反而讓我更願意相信。」','對方溫聲道：「這樣也好。把事情想清楚，總勝過勉強自己。」','對方看著你笑了笑：「你有你的分寸，我明白，也會尊重。」'],
-  neutral:['對方語氣依舊溫和：「好，那便照你說的做。」','對方點頭：「我明白你的意思。慢一些也無妨。」','對方把話接得很穩：「至少你願意坦白，這便足夠。」'],
-  distant:['對方的笑意淡了一些，仍溫聲道：「我明白了。你不必為難自己。」','對方安靜片刻：「好，我會把界線記清楚。」','對方沒有追問，只輕輕點頭：「那便依你所願。」']
+  close:['對方愣了一下，笑意才一點點漫上眼底：「好，我記住了。哪天你反悔，我可是要拿今日這句話來問你的。」','對方垂眼藏了藏笑，最後還是沒藏住：「你每次都這樣……偏在我最不安的時候，說一句讓人捨不得忘的話。」','對方輕輕應了一聲，又怕你沒聽清似的補道：「我的意思是，我很高興。真的。」'],
+  thoughtful:['對方捧著杯盞想了片刻：「你沒有為了哄我便隨口答應，反而讓我安心。慢一點沒關係，我們都別委屈自己。」','對方眼神柔和下來：「我懂。人與人靠近，本就不是把彼此的分寸都磨掉。」','對方看了你一會兒，笑道：「這答案很像你。未必好聽，卻是認真說給我的。」'],
+  neutral:['對方點點頭，順手替你添了些茶：「好，那就這樣。若哪日改了主意，記得第一個告訴我。」','對方沒有催你，只笑了一下：「慢些也好。能把真話說出來，總比彼此猜來猜去強。」','對方把你的話在心裡過了一遍：「我聽懂了。至少今日，我們又比昨日更了解彼此一點。」'],
+  distant:['對方眼裡的亮色淡了些，卻仍替你把話接穩：「我明白。你不必因為怕我難過，就說不是本心的話。」','對方安靜地收回目光：「好，我會站在你覺得舒服的地方。只是……容我緩一緩。」','對方勉強笑了笑：「知道了。放心，我不會追著你討一個更好聽的答案。」']
  },
  reserved:{
-  close:['對方沉默良久，才低聲道：「……好。我記下了。」','那雙一向平靜的眼眸微微動了一下：「既是你說的，我信。」','對方別開視線，語氣仍淡：「不必重複。我已經聽清了。」'],
-  thoughtful:['對方略一思索：「有分寸，總比一時衝動好。」','對方頷首：「你的考量沒有錯。便如此。」','對方看了你一眼：「至少這個答案，是你想過之後才說的。」'],
-  neutral:['對方只應了一聲：「嗯。」片刻後又補道：「我沒有異議。」','對方神色未變：「可以。照你的意思。」','對方收回目光：「我知道了，繼續走吧。」'],
-  distant:['對方的神情重新歸於疏淡：「明白。我不會越界。」','短暫沉默後，對方只道：「既如此，便不必多言。」','對方沒有挽留：「好。這是你的選擇。」']
+  close:['對方沉默得有些久，耳尖卻悄悄紅了：「……好。我聽清了，你不用再說第二遍。」','那雙總顯得平靜的眼睛忽然有了笑意：「是你說的，我便信。只是別讓我等太久。」','對方別開臉，手卻沒有收回：「我不太會說這些。總之……我也是。」'],
+  thoughtful:['對方思索片刻才道：「你肯把顧慮告訴我，已經很好。剩下的，我們可以慢慢想。」','對方輕輕頷首：「這樣很公平。你不必遷就我，我也不會讓你獨自承擔。」','對方看了你一眼：「我原以為你會敷衍過去。這個答案……比我預想的好。」'],
+  neutral:['對方只應了一聲「嗯」，走出兩步後又停下：「方才不是敷衍。我是真的答應了。」','對方神色仍淡，語氣卻軟了些：「可以。若有不妥，我會直接告訴你。」','對方收回目光：「知道了。走吧——今日的路還長，不必急著一次把話說盡。」'],
+  distant:['對方的手指在袖中微微收緊，臉上仍看不出波瀾：「明白。我會守好分寸。」','沉默拖得很長，對方最後只道：「既然這是你的真心話，我接受。只是今日……先別再問我了。」','對方沒有挽留，轉身時腳步卻慢了一拍：「好。你走你的路便是。」']
  },
  free:{
-  close:['對方先是一怔，隨即笑出聲：「這可是你說的。往後別想賴帳。」','對方揚起眉梢：「好啊，有你這句話，這趟便更有意思了。」','對方笑著拍了拍你的肩：「痛快。我也拿真心回你。」'],
-  thoughtful:['對方轉了轉手中茶盞：「想得周全也好，路才能走得久。」','對方笑道：「你有你的走法，我不攔；能說明白就成。」','對方眨了眨眼：「原來你是這般想的。倒也不壞。」'],
-  neutral:['對方爽快應下：「成，那便這麼辦。」','對方擺擺手：「小事。你自在，我也自在。」','對方笑了一聲：「答案不算意外，但我聽見了。」'],
-  distant:['對方笑意仍在，眼神卻淡了些：「行。聚散本來就不必勉強。」','對方聳肩：「好吧，各走各的也算一種同行。」','對方退開半步：「明白。你不用替我找理由。」']
+  close:['對方先愣住，隨即笑得眉眼都彎了：「這可是你親口說的！我記性好得很，幾百年後也別想賴。」','對方揚起眉梢，肩頭輕輕撞了你一下：「早這麼說不就好了？害我白白猜了那麼久。」','對方笑著向你伸出拳：「痛快。你給我一分真心，我還你十分——多的先欠著。」'],
+  thoughtful:['對方轉著茶盞，難得安靜了一會兒：「你說得對。走得自在，不等於什麼都不必交代。」','對方笑著嘆氣：「行，你照你的步子走。走累了喊一聲，我就在附近。」','對方眨眨眼，語氣比平日認真：「原來你心裡藏了這麼多。下回早點說，我又不會笑你。」'],
+  neutral:['對方乾脆地一拍掌：「成，就這麼辦。說好了便別偷偷改規矩。」','對方擺擺手，笑得灑脫：「小事。你自在些，我和你相處也自在。」','對方歪頭看你：「不算意外。但由你親口說出來，聽著還是不太一樣。」'],
+  distant:['對方臉上還掛著笑，卻沒再像往常那樣打趣：「行。心不在一處，綁著也沒意思。」','對方聳了聳肩，望向遠處：「好吧，各走各的。若日後還能碰見，就再喝一杯。」','對方退開半步，把失落藏進玩笑裡：「懂了。放心，我這人最大的本事，就是不死纏爛打。」']
  },
  devoted:{
-  close:['對方久久望著你：「你既這樣說，我便會當真。不是只當今日的一句話。」','對方的目光沒有半分閃避：「好。你肯交給我的，我絕不會放手。」','對方低聲道：「我等的就是你這句。往後的事，我與你一同承擔。」'],
-  thoughtful:['對方認真聽完：「你要想清楚，我可以等。但別用沉默把我推開。」','對方緩緩點頭：「你的顧慮我會記住，也會證明我值得你信。」','對方目光沉靜：「有界線無妨，只要你願意讓我知道界線在哪裡。」'],
-  neutral:['對方看著你確認了一遍：「好。我依你，但我會記得今日。」','對方答得很慢：「可以。只是我不會把這件事當作無關緊要。」','對方收緊手指，又緩緩放開：「我聽見了。」'],
-  distant:['對方沉默得比往常更久：「原來如此。即使如此，我也不會假裝沒有聽見。」','對方眼底暗了一瞬：「好。我尊重你的選擇，但不代表我毫不在意。」','對方沒有挽留，只低聲道：「你可以走。我會自己記住這一刻。」']
+  close:['對方久久看著你，像是在分辨這是不是一場夢：「你既說了，我便會當真。不是只記到明日，是很久、很久。」','對方握住你的手，力道重得幾乎發疼，又急忙鬆了些：「抱歉……我只是太怕一放手，你便把這句話收回去。」','對方低聲笑了，眼眶卻微微發紅：「我等的就是這一句。往後再難的事，也終於不是我一個人的了。」'],
+  thoughtful:['對方把每個字都聽完，才認真回答：「你慢慢想，我等得起。但若心裡難受，別再用沉默把我隔在外面。」','對方緩緩點頭：「你的顧慮，我一件也不會輕看。我不求你立刻信我，只求你看著我去做。」','對方目光沉靜：「有界線不要緊。只要你肯告訴我它在哪裡，我就不會莽撞地弄疼你。」'],
+  neutral:['對方盯著你確認良久：「好，我依你。可我會把今日放在心上，不是拿來計較，是怕自己忘了你的心意。」','對方答得很慢：「可以。只是與你有關的事，我實在做不到當成無關緊要。」','對方收緊手指，又一根根鬆開：「我聽見了。你不用因為我的樣子，再說一次安慰我。」'],
+  distant:['對方沉默得近乎令人不安，最後才啞聲道：「原來如此。給我一點時間吧，我還做不到立刻裝作沒事。」','對方眼底暗了一瞬：「好，我尊重你。只是尊重與不難過，終究不是同一回事。」','對方沒有伸手挽留，只低聲道：「你走吧。我怕再多看一會兒，就會說出讓你為難的話。」']
  }
 };
 const partnerFlagReactions={
@@ -125,11 +134,12 @@ const partnerFlagReactions={
  rely:{warm:'對方溫聲道：「放心。你肯信我，我便會好好守著你。」',reserved:'對方按住翻湧靈氣，只低聲道：「別怕。我在。」',free:'對方笑意收斂，語氣難得認真：「交給我。這一次你只管走完自己的周天。」',devoted:'對方一字一句道：「只要我還在，便不會讓你的靈台在我眼前崩散。」'},
  care:{warm:'對方眼中泛起暖意：「原來那些沒有回音的歲月裡，一直有人在找我。」',reserved:'對方垂下眼，半晌才道：「……辛苦你了。下次我會留下消息。」',free:'對方笑著嘆氣：「竟讓你追了這麼遠。這份人情，我怕是還不清了。」',devoted:'對方看著你，聲音微啞：「你真的來了。從今往後，我不會再讓你這樣找我。」'},
  possible:{warm:'對方耳尖微紅，卻沒有移開目光：「那便等到我們都願意時，再由我們親口決定。」',reserved:'對方沉默了一會兒：「……我並不討厭這個可能。」',free:'對方忽然笑了：「好啊。旁人如何叫不重要，我倒想聽你有朝一日親口說。」',devoted:'對方目光灼然：「可能二字，我記下了。總有一天，我會等到你把它說成肯定。」'},
- welcome:{warm:'對方回首一笑：「好。下次我還帶著溫茶來。」',reserved:'對方腳步微停：「嗯。我會再來。」',free:'對方揮了揮手：「說定了。下回可別嫌我來得太勤。」',devoted:'對方回望洞府燈火：「只要你還願意等，我便一定會再來。」'}
+ welcome:{warm:'對方回首一笑：「好。下次我帶新茶來——若不好喝，你也得陪我喝完。」',reserved:'對方腳步微停，唇角有一點藏不住的笑：「嗯。我會再來。不是路過。」',free:'對方倒退著朝你揮手：「說定了！下回可別裝閉關躲我。」',devoted:'對方回望洞府燈火，眼神安定下來：「只要你還願意留這盞燈，我就一定會再來。」'},
+ skip:{warm:'門外安靜了一會兒。對方把茶壺輕輕放在石階上：「好，你先忙。茶還溫著，記得喝。」',reserved:'禁制外的人沉默片刻，只留下一句傳音：「知道了。別忘了歇息。」',free:'對方敲了敲禁制，故意笑道：「行吧，這壺茶先欠著。下回可要連本帶利陪我喝。」',devoted:'對方在門外站了很久，最後仍只溫聲道：「我不擾你。若需要我，傳訊便是。」'}
 };
 function partnerReactionTone(bond,accord,flag){if(flag==='leave'||flag==='skip'||bond<0||accord<0)return 'distant';if(['rely','care','possible','welcome'].includes(flag)||bond>=2)return 'close';if(accord>=2)return 'thoughtful';return 'neutral'}
 function partnerChoiceReaction(event,raw,index){const [,bond=0,accord=0,flag='']=raw,personality=state.partnerStory?.personality||'warm';if(partnerFlagReactions[flag]?.[personality])return partnerFlagReactions[flag][personality];const tone=partnerReactionTone(bond,accord,flag),pool=partnerReactionVoices[personality]?.[tone]||partnerReactionVoices.warm.neutral,voice=pool[(event.chapter*7+event.step*3+index)%pool.length],beat=partnerReactionBeats[event.chapter-1]?.[event.step]||'';return `${beat}${beat?' ':''}${voice}`}
-function partnerEndingReaction(index){const eligible=partnerEndingEligible(),accepted=eligible&&index===0,personality=state.partnerStory?.personality||'warm';const lines=accepted?{warm:'對方眼中漾開笑意，將手輕輕交到你掌中：「好。從今日起，長生路不必再各自走了。」',reserved:'對方沉默許久，終於握住你的手：「……好。往後，我與你同行。」',free:'對方笑得像終於等到這一日：「那便說定了。天地再大，我們一起去看。」',devoted:'對方緊緊回握住你：「我等這句話等了太久。此後生死、長生，我都與你同路。」'}:eligible?{warm:'對方眸光微黯，仍溫聲道：「我明白。能把話說清楚，也好過勉強同行。」',reserved:'對方收回伸出的手：「好。我尊重你的選擇。」',free:'對方安靜一瞬，又笑道：「也好。同行不一定非要結契。」',devoted:'對方許久沒有說話，最後只道：「我不會逼你。但今日的答案，我恐怕永遠都忘不了。」'}:{warm:'對方輕聲道：「能同行至此，已是難得。願你往後一路平安。」',reserved:'對方頷首：「這段歲月，我會記得。」',free:'對方舉杯一笑：「路不同也無妨。山高水長，總有再會之日。」',devoted:'對方凝望著你：「即使不能並肩到最後，我也不會否認曾真心走過這一程。」'};return lines[personality]||lines.warm}
+function partnerEndingReaction(index){const eligible=partnerEndingEligible(),accepted=eligible&&index===0,personality=state.partnerStory?.personality||'warm';const lines=accepted?{warm:'對方眼裡一下有了水光，笑著把手放進你掌心：「好。那往後累了就一起歇，迷路了也一起找。長生這麼久，我們慢慢走。」',reserved:'對方久久沒有說話，握住你時掌心竟有些發顫：「……好。往後我若又把心事藏起來，你記得提醒我——我們已經不是一個人了。」',free:'對方先笑，笑著笑著卻紅了眼眶：「那便說定了！天地再大也一起去看。誰敢偷偷先走，誰就欠對方一萬年的酒。」',devoted:'對方緊緊回握住你，又怕弄疼似的放輕力道：「我等這句話等了太久。從今往後，我不只陪你赴生死，也陪你過每一個尋常日子。」'}:eligible?{warm:'對方眼裡的笑慢慢淡下去，仍輕聲道：「我明白。謝謝你沒有用一句假話哄我。只是今日，容我先自己走一段。」',reserved:'對方收回手，藏進袖中：「好，我尊重你。」停了一會兒，又低聲補道，「但若我走得快些，不是怨你，只是怕自己回頭。」',free:'對方安靜了片刻，才重新笑起來：「也好。同行本就不只有一種模樣——不過今日這頓酒，你可得讓我先醉一場。」',devoted:'對方許久沒有出聲，最後勉強彎了彎唇：「我不會逼你。只是別要求我立刻放下……我還需要很長一段時間，學會把這份心意安放好。」'}:{warm:'對方替你理了理衣襟，像往常那樣溫聲道：「能同行至此，已經很好。往後若累了，仍可以回來喝一盞茶。」',reserved:'對方輕輕頷首：「這段歲月，我會記得。」走出幾步，又回頭道，「你也要好好走。」',free:'對方舉杯與你輕輕一碰：「路不同又如何？山高水長，總有再見的一日。到時別裝作不認識我。」',devoted:'對方凝望著你，像要把這一刻記得更久：「即使不能並肩到最後，我也不後悔曾真心走過這一程。你不必覺得虧欠。」'};return lines[personality]||lines.warm}
 function partnerRenderReaction(event,content){const reaction=event.reaction,isPlayer=reaction.phase===0,isNarration=!isPlayer&&reaction.narration,story=state.partnerStory,portrait=isPlayer?partnerPlayerArt():partnerArt('dialogue'),speaker=isPlayer?(state.name||'修士'):isNarration?'':partnerDisplayName(),tag=isPlayer?'你的回應':isNarration?'未被看見的另一端':`${partnerPersonalities[story.personality]}・對方的反應`,text=isPlayer?reaction.playerText:reaction.partnerText,visual=`<div class="partner-visual-stage${isNarration?' partner-narration-stage':''}">${isNarration?'':`<img class="partner-dialogue-art${isPlayer?' partner-player-dialogue-art':''}" src="${portrait}" alt="${speaker}半身立繪">`}</div>`;content.innerHTML=`<section class="partner-story partner-reaction-story" style="--partner-scene:url('${partnerScene(event.chapter)}')">${visual}<div class="partner-dialogue-card"><small>${event.title}・${tag}</small>${partnerSpeakerHeading(speaker)}<p>${text}</p></div><div class="partner-choice-panel partner-reaction-panel"><button data-partner-reaction-next class="jade-button">繼續</button></div></section>`;document.querySelector('[data-partner-reaction-next]').onclick=()=>partnerAdvanceReaction(event)}
 function partnerAdvanceReaction(event){const reaction=event.reaction;if(!reaction)return;if(reaction.phase===0){reaction.phase=1;renderEncounterModal();save();return}delete event.reaction;if(reaction.ending)return partnerResolveEnding(event,reaction.endingIndex);if(reaction.flag==='leave'&&event.chapter===1){const story=state.partnerStory;if(!story.name)story.name=story.gender==='男'?'沈硯':'蘇晚';return partnerFinishChapter(event,reaction.label,'你沒有循跡入林。這段緣分並未消失，只是把真正的初見留給了下一次。')}const data=partnerStoryData[event.chapter-1];event.step++;if(event.step>=data.steps.length)return partnerFinishChapter(event,reaction.label,'此章已記入歲月。');renderEncounterModal();save()}
 function partnerRenderEncounter(event,content){
@@ -145,7 +155,7 @@ function partnerConfirmName(event){const input=document.querySelector('#partnerN
 function partnerResolveChoice(event,index){if(event.reaction)return;const data=partnerStoryData[event.chapter-1],step=data.steps[event.step],raw=step?.choices?.[index];if(!raw)return;const [label,bond=0,accord=0,flag='']=raw,story=state.partnerStory;story.chapterBond=(story.chapterBond||0)+bond;story.chapterAccord=(story.chapterAccord||0)+accord;if(flag)story.flags[flag]=true;story.memories.push({chapter:event.chapter,label,year:experiencedYears()});event.reaction={phase:0,label,flag,playerText:partnerPlayerChoiceText(label),partnerText:partnerChoiceReaction(event,raw,index),narration:flag==='leave',ending:false};renderEncounterModal();save()}
 function partnerFinishChapter(event,choice,result){const story=state.partnerStory,delta=v=>v>=2?1:v<=-2?-1:0;story.bond=partnerClamp(story.bond+delta(story.chapterBond||0));story.accord=partnerClamp(story.accord+delta(story.chapterAccord||0));story.chapterBond=0;story.chapterAccord=0;story.chapter=event.chapter;const delay=partnerDelays[Math.max(0,Math.min(9,event.chapter-1))],range=delay||[120,360];story.nextYear=experiencedYears()+range[0]+Math.floor(Math.random()*(range[1]-range[0]+1));state.encounterHistory.unshift({title:event.title,choice,result,year:experiencedYears(),at:gameNow(),tags:['life','partner']});state.encounterHistory=state.encounterHistory.slice(0,60);state.encounterQueue.shift();render();renderEncounterModal();updateEncounterButton();save();toast(`${event.title}・已收入歲月錄`)}
 function partnerEndingEligible(){const s=state.partnerStory,flags=['rely','care','possible','welcome'].filter(k=>s.flags[k]).length;return s.bond>=3&&s.accord>=3&&flags>=2}
-function partnerRenderEnding(event,content){if(event.reaction)return partnerRenderReaction(event,content);const s=state.partnerStory,eligible=partnerEndingEligible(),ending=eligible?'兩心同道':s.bond>=3?'有情未同道':s.accord>=3?'同道未有情':'各自長生';const question=eligible?`「${state.name}，往後的長生路，你可願與我同行？」`:`你們在夕照中說完最後一段話。此心或近、此道或同，卻終究沒有走成同一條路。`;event.choices=eligible?[partnerChoice('我願意'),partnerChoice('仍選擇獨行')]:[partnerChoice('記住這段歲月')];const visual=eligible?`<div class="partner-visual-stage"><img class="partner-dialogue-art" src="${partnerArt('dialogue')}" alt="${s.gender}修士半身像"></div>`:'<div class="partner-visual-stage partner-narration-stage"></div>',speaker=eligible?`<h2>${partnerDisplayName()}</h2>`:'';content.innerHTML=`<section class="partner-story partner-ending" style="--partner-scene:url('${partnerScene(10)}')">${visual}<div class="partner-dialogue-card"><small>${event.title}・${ending}</small>${speaker}<p>${question}</p></div><div class="partner-choice-panel encounter-choices">${event.choices.map((c,i)=>`<button data-partner-ending="${i}"><b>${c.label}</b></button>`).join('')}</div></section>`;document.querySelectorAll('[data-partner-ending]').forEach(b=>b.onclick=()=>partnerChooseEnding(event,+b.dataset.partnerEnding))}
+function partnerRenderEnding(event,content){if(event.reaction)return partnerRenderReaction(event,content);const s=state.partnerStory,eligible=partnerEndingEligible(),ending=eligible?'兩心同道':s.bond>=3?'有情未同道':s.accord>=3?'同道未有情':'各自長生';const question=eligible?`對方望著你，像平日那樣喚了一聲「${state.name}」，後面的話卻停了很久才說出口：「長生路太長了。我不敢許諾永遠沒有爭執，也不敢說每一步都能走對……可若是與你一起，我想試試。你願意嗎？」`:`夕照落在你們之間。該說的、沒能說的，都在這場相逢裡有了答案。你們沒有責怪彼此，只是安靜地把這段同行珍重收好。`;event.choices=eligible?[partnerChoice('我願意'),partnerChoice('仍選擇獨行')]:[partnerChoice('記住這段歲月')];const visual=eligible?`<div class="partner-visual-stage"><img class="partner-dialogue-art" src="${partnerArt('dialogue')}" alt="${s.gender}修士半身像"></div>`:'<div class="partner-visual-stage partner-narration-stage"></div>',speaker=eligible?`<h2>${partnerDisplayName()}</h2>`:'';content.innerHTML=`<section class="partner-story partner-ending" style="--partner-scene:url('${partnerScene(10)}')">${visual}<div class="partner-dialogue-card"><small>${event.title}・${ending}</small>${speaker}<p>${question}</p></div><div class="partner-choice-panel encounter-choices">${event.choices.map((c,i)=>`<button data-partner-ending="${i}"><b>${c.label}</b></button>`).join('')}</div></section>`;document.querySelectorAll('[data-partner-ending]').forEach(b=>b.onclick=()=>partnerChooseEnding(event,+b.dataset.partnerEnding))}
 function partnerChooseEnding(event,index){if(event.reaction)return;const label=event.choices?.[index]?.label;if(!label)return;event.reaction={phase:0,label,playerText:partnerPlayerChoiceText(label),partnerText:partnerEndingReaction(index),narration:false,ending:true,endingIndex:index};renderEncounterModal();save()}
 function partnerResolveEnding(event,index){const s=state.partnerStory,accepted=partnerEndingEligible()&&index===0;s.chapter=10;s.completed=true;s.ending=accepted?'與君同行':partnerEndingEligible()?'自選獨行':s.bond>=3?'有情未同道':s.accord>=3?'同道未有情':'各自長生';if(accepted)partnerEstablish();state.encounterHistory.unshift({title:event.title,choice:s.ending,result:accepted?`${partnerDisplayName()}自此成為你的道侶。`:'你們將這段相逢收進各自的歲月。',year:experiencedYears(),at:gameNow(),tags:['life','partner']});state.encounterQueue.shift();render();renderEncounterModal();updateEncounterButton();save();toast(accepted?'同心結已成・洞府道侶頁開啟':'緣起緣落，皆為長生路')}
 
