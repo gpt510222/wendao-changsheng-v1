@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260910-78';
+window.WENDAO_BUILD='20260910-79';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -32,19 +32,33 @@ const sectCatalog = [
   {star:8,need:70,realm:'踏霄',good:['昊天聖宮','須彌神山','太初龍院'],evil:['玄陰帝谷','葬月魔宗','燭龍神庭']},
   {star:9,need:80,realm:'遊穹',good:['太上白玉京','諸天星羅神宗','九霄凌天仙宮'],evil:['永劫輪迴殿','無極天魔聖宗','太古神夢天宮']}
 ];
-const sectTasks = [
-  {id:'sweep',name:'灑掃庭院',need:0,gain:5,stone:40,prestige:1,desc:'每日灑掃殿前石階，維持門庭清淨。'},
-  {id:'cook',name:'膳房幫廚',need:10,gain:6,stone:60,prestige:1,desc:'協助膳房備膳，照料同門起居。'},
-  {id:'herb',name:'採藥巡山',need:20,gain:8,stone:100,prestige:2,desc:'巡查外山並採集門中所需靈藥。'},
-  {id:'escort',name:'護送門人',need:30,gain:10,stone:150,prestige:3,desc:'護送低階弟子往返坊市，保全物資。'},
-  {id:'gate',name:'鎮守山門',need:40,gain:12,stone:220,prestige:4,desc:'駐守護山大陣，盤查來往修士。'},
-  {id:'vein',name:'調和地脈',need:50,gain:15,stone:320,prestige:5,desc:'梳理山中靈脈，穩固宗門根基。'},
-  {id:'demon',name:'清剿妖患',need:60,gain:18,stone:460,prestige:7,desc:'率隊清除宗門疆域內的妖邪禍患。'},
-  {id:'array',name:'維護大陣',need:70,gain:21,stone:640,prestige:9,desc:'巡視護宗陣眼，補全破損禁制。'},
-  {id:'realm',name:'駐守秘境',need:80,gain:24,stone:900,prestige:12,desc:'長期鎮守宗門秘境與珍稀資源。'},
-  {id:'diplomacy',name:'出使仙盟',need:90,gain:27,stone:1240,prestige:16,desc:'代表門派拜訪各方勢力，維繫盟約。'},
-  {id:'rift',name:'鎮壓虛空裂隙',need:100,gain:30,stone:1700,prestige:20,desc:'以玄闕之力封鎮裂隙，護佑門中萬年基業。'}
+const sectTaskBlueprints=[
+  ['sweep',1,10,100,5],['cook',2,12,150,6],['herb',3,14,220,7],['escort',4,16,320,8],
+  ['gate',5,18,460,9],['vein',6,20,650,10],['demon',7,22,900,12],['array',8,24,1250,14],
+  ['realm',9,26,1700,17],['diplomacy',11,28,2300,21],['rift',13,30,3100,25],['skyward',15,34,4200,30],
+  ['domain',17,38,5700,36],['voidward',19,42,7700,43],['worldaxis',21,46,10400,51],['heavenorder',23,50,14000,60]
 ];
+const sectTaskVariants={
+  spirit:[
+    ['引氣滌塵','引一縷清氣洗去殿前塵垢，熟悉門中靈息。'],['溫養藥圃','調動元息溫養藥圃，照料門中常用靈植。'],['梳理靈脈','沿山巡察支脈，使紊亂靈氣重歸正途。'],['護持聚靈陣','穩住聚靈陣眼，避免門人修行時靈息逆衝。'],
+    ['巡察地脈','巡行門派疆域，查明地脈異動與靈潮缺口。'],['修補護宗禁制','以神念勾連陣紋，修補護宗禁制的細微裂痕。'],['調和五行陣眼','平衡五行氣機，使各處陣眼循環不息。'],['鎮守靈泉','日夜調息鎮守靈泉，防止泉眼枯竭或暴湧。'],
+    ['維繫護山大陣','統合諸峰靈流，長期維繫護山大陣。'],['平復靈潮逆湧','深入地脈樞紐，將逆湧靈潮導回山河。'],['重整山河氣脈','跨域梳理破碎氣脈，重續門派山河根基。'],['封鎮天外罡風','以浩瀚元息結陣，封鎮侵入凡間的天外罡風。'],
+    ['護持跨域法壇','維持跨域法壇運轉，護送門中修士往返諸地。'],['推演護界大陣','推演護界陣圖，補全宗門傳承中的失落環節。'],['鎮守天地樞機','坐鎮天地樞機，調度萬里靈流不使崩散。'],['重定凡界靈序','以畢生道行重定凡界靈序，為後世守住修行根本。']
+  ],
+  sword:[
+    ['擦拭兵閣','整肅兵閣劍器，從每一道鋒芒中磨礪劍心。'],['運送劍材','護送鑄劍材料入山，辨識靈材與鋒刃氣性。'],['巡守劍坪','巡守門中劍坪，阻止失控劍氣傷及同門。'],['護送門人','仗劍護送低階門人往返坊市，保全門中物資。'],
+    ['清剿山妖','清剿宗門附近山妖，以實戰磨亮本命劍鋒。'],['鎮守劍塚','鎮守歷代殘劍沉眠之地，平息暴走劍意。'],['追緝邪修','追緝侵擾門派疆域之人，以劍斷其後路。'],['破除外敵劍陣','尋出敵陣鋒眼，一劍破開盤踞多年的殺局。'],
+    ['守衛宗門疆界','巡弋廣闊疆界，使宵小不敢踏近山門。'],['斬滅地脈妖禍','循妖氣深入地脈，以劍斬斷禍亂根源。'],['巡弋萬里劍關','御劍巡守萬里劍關，擋下跨域來敵。'],['截斷天外魔鋒','迎擊天外魔鋒，在其墜入凡間前將之斬碎。'],
+    ['鎮守跨域劍門','一人一劍鎮住跨域劍門，護持往來門人。'],['斬平虛空亂流','深入界隙，以不滅劍光斬平虛空亂流。'],['護持九域劍陣','統御九域劍陣，令萬劍各歸其位。'],['一劍靖定凡天','以通天劍意巡守凡界，使諸天鋒禍止於界外。']
+  ],
+  body:[
+    ['搬運門中物資','以肩背搬運門中物資，打牢最初肉身根基。'],['修葺演武場','搬石夯土修葺演武場，在勞作中鍛鍊筋骨。'],['開鑿山道','徒手開鑿險峻山道，為門人打通往來之途。'],['護送門人','以肉身擋在隊伍最前，護送門人與物資返山。'],
+    ['鎮守山門','立於山門之前，以強橫體魄震懾來犯之敵。'],['搬移地脈巨石','移開壓住地脈的巨石，使山中靈流恢復。'],['抵禦獸潮','迎面承受獸潮衝擊，守住門派外圍村鎮。'],['鎮壓地脈震動','以肉身為樁鎮住地脈，阻止山門傾覆。'],
+    ['駐守宗門秘境','長期駐守危險秘境，以金身承受異力侵蝕。'],['扛築護宗天柱','扛起護宗天柱，使崩裂陣基重新合攏。'],['鎮守萬里邊關','以不倒之身鎮守邊關，擋下連年征戰。'],['承接天外罡風','登臨天穹，以血肉承接足以裂山的罡風。'],
+    ['肉身鎮壓界門','立身界門中央，鎮住兩界交錯的撕扯。'],['平定虛空震盪','踏入虛空裂隙，以雙拳平定界壁震盪。'],['托舉護界神山','托起傾覆神山，重立宗門護界根基。'],['金身鎮守凡天','以不滅金身鎮守凡天，為後世扛下界外災劫。']
+  ]
+};
+const sectTasks=sectTaskBlueprints.map(([id,realm,gain,stone,prestige],index)=>({id,realm,gain,stone,prestige,variants:{spirit:sectTaskVariants.spirit[index],sword:sectTaskVariants.sword[index],body:sectTaskVariants.body[index]}}));
 const originProfiles = {
   '家族子弟':{trueQi:5,rootBone:5,physique:5,agility:5,spiritualPower:5,comprehension:5,fortune:5},
   '流浪孤兒':{trueQi:3,rootBone:4,physique:4,agility:4,spiritualPower:7,comprehension:3,fortune:10},
@@ -264,6 +278,10 @@ const craftingMaterialItems=[
 ];
 const craftingMaterialCountByName=Object.fromEntries(craftingMaterialItems.map(([name,count])=>[name,count]));
 craftingMaterialItems.forEach(([name,count,image,description])=>itemCatalog[`craft-material-${count}`]={name,image:`assets/qstyle-v2/production/materials/${image}`,description,count,usable:false,giftable:false,sellPrice:1});
+const forgeTierMaterialCountByName=Object.fromEntries(tierMaterials.map((name,index)=>[name,`forgeTierMaterial_${index+1}`]));
+tierMaterials.forEach((name,index)=>itemCatalog[`forge-tier-material-${index+1}`]={name,image:'assets/qstyle-v2/mainline/material-lingjing.png',description:`凝聚第 ${index+1} 階器韻的煉器階材，是製作${equipmentSets[index]}系列裝備的必要素材。`,count:forgeTierMaterialCountByName[name],usable:false,giftable:false,sellPrice:1,materialTier:index+1});
+itemCatalog.equipmentSpiritCore={name:'器靈精魄',image:'assets/qstyle-v2/spirit-insight-v1.png',description:'從強大器靈殘韻中凝成的精魄，是製作極品裝備的核心珍材。',count:'equipmentSpiritCore',usable:false,giftable:false,sellPrice:1,materialTier:10};
+const productionMaterialCountByName={...craftingMaterialCountByName,...forgeTierMaterialCountByName,'器靈精魄':'equipmentSpiritCore'};
 const pillTypes=[['yuanxi','元息丹','trueQi','元息','赤元草'],['minggu','命骨丹','rootBone','命骨','血玉參'],['xuanqu','玄軀丹','physique','玄軀','金甲芝'],['youying','游影丹','agility','游影','輕靈葉']],pillNeeds=[[2,1],[3,2],[4,3],[6,4],[8,5],[10,7],[13,9],[16,12],[20,15]];
 pillTypes.forEach(([key,name,attribute,label])=>{for(let tier=1;tier<=9;tier++){const id=`pill-${key}-t${tier}`;itemCatalog[id]={name:`${['一','二','三','四','五','六','七','八','九'][tier-1]}階${name}`,image:`assets/qstyle-v2/production/pills/${key}-t${tier}.png`,description:`以專屬主藥與丹砂煉成的永久${label}屬性丹。每一階此類丹藥基礎最多服用 50 顆，可藉洗髓伐毛丹提高上限。`,count:`pillCount_${key}_${tier}`,usable:true,giftable:false,sellPrice:1,pillData:{key,tier,attribute,label}}}});
 const brewTypes=[['yuanxi','歸元清釀','trueQi','元息','赤元草'],['minggu','玉骨醇醪','rootBone','命骨','血玉參'],['xuanqu','玄身烈酎','physique','玄軀','金甲芝'],['youying','流影霞酌','agility','游影','輕靈葉']],brewQualities={normal:{name:'凡品',gain:50,herb:24},rare:{name:'極品',gain:100,herb:36}};
@@ -344,7 +362,7 @@ const mainlineFirstClearRewards=mortalMainline.map(stage=>{
   const boss=stage.id%2===0,bag=mainlineBagRanges[stage.id-1],bias=mainlineBias[(stage.id-1)%4],primary=mainlineMaterials[(stage.id-1)%mainlineMaterials.length],secondary=mainlineMaterials[stage.id%mainlineMaterials.length],pick=(low,high)=>boss?high:low,rewards=[
     {type:'state',key:`mainlineMaterial_${primary[1]}`,name:primary[0],amount:boss?2:1},
     ...(boss?[{type:'state',key:`mainlineMaterial_${secondary[1]}`,name:secondary[0],amount:1}]:[]),
-    {type:'loot',key:tierMaterials[stage.realm-1],name:tierMaterials[stage.realm-1],amount:boss?2:1},
+    {type:'state',key:forgeTierMaterialCountByName[tierMaterials[stage.realm-1]],name:tierMaterials[stage.realm-1],amount:boss?2:1},
     {type:'loot',key:bias[1],name:bias[1],amount:boss?3:2},
     {type:'state',key:craftingMaterialCountByName[bias[2]],name:bias[2],amount:boss?2:1},
     {type:'state',key:craftingMaterialCountByName['丹砂'],name:'丹砂',amount:boss?2:1},
@@ -354,7 +372,7 @@ const mainlineFirstClearRewards=mortalMainline.map(stage=>{
     {type:'state',key:'mainlineIronBag',name:'隕鐵袋',amount:pick(bag[4],bag[5])},
     {type:'state',key:'mainlineFoodBag',name:'食物袋',amount:pick(bag[6],bag[7])}
   ];
-  if(stage.id===18){mainlineMaterials.forEach(([name,key])=>rewards.push({type:'state',key:`mainlineMaterial_${key}`,name,amount:2}));rewards.push({type:'loot',key:'器靈精魄',name:'器靈精魄',amount:1})}
+  if(stage.id===18){mainlineMaterials.forEach(([name,key])=>rewards.push({type:'state',key:`mainlineMaterial_${key}`,name,amount:2}));rewards.push({type:'state',key:'equipmentSpiritCore',name:'器靈精魄',amount:1})}
   return rewards;
 });
 function mainlineFirstClearRewardText(stage){return mainlineFirstClearRewards[stage.id-1].map(x=>`${x.name}×${x.amount}`).join('、')}
@@ -445,6 +463,7 @@ defaults.sectTechniqueMailVersion=0;
 defaults.sectRecords={};
 defaults.sectMerit=0;
 defaults.sectSearchAvailableAt=0;
+defaults.sectTaskRouteUnlocks={};
 defaults.mainlineCleared=0;defaults.mainlineStories={};defaults.mainlineMaterials={};defaults.mainlineLoot={};defaults.mainlineHarvest=[];defaults.mainlineSpiritStoneBag=0;defaults.mainlineWoodBag=0;defaults.mainlineIronBag=0;defaults.mainlineFoodBag=0;defaults.craftingMaterialMigration=0;defaults.ownedArtifacts=[];defaults.equippedArtifact='';
 defaults.ascension={version:1,route:'none',prologueCompleted:false,heartTrialCompleted:false,delusionTrialCompleted:false,roadEndCompleted:false,heartRewardAllocated:false,delusionRewardAllocated:false,roadEndRewardAllocated:false,ascended:false,ascendedAt:0,serverAscensionRank:0,titleId:'',heartAnswers:[],delusionReplies:[],delusionAttemptCount:0,roadEndAttemptCount:0,lastMortalTrainingGround:'spirit',currentRealm:'mortal'};
 defaults.divineRoamingUnlocked=false;defaults.divineRoamingManualCount=0;defaults.divineRoamingDay='';defaults.divineRoamingUsed=0;defaults.divineRoamingJob=null;defaults.divineRoamingHarvest={};defaults.divineRoamingTimingVersion=0;
@@ -457,9 +476,10 @@ defaults.renameProtagonistJadeCount=0;defaults.genderRebirthMirrorCount=0;defaul
 defaults.mindEmbodimentUnlocked=false;defaults.mindEmbodimentManualCount=0;
 mainlineMaterials.forEach(([,key])=>defaults[`mainlineMaterial_${key}`]=0);defaults.mainlineMaterialMigration=0;
 craftingMaterialItems.forEach(([,count])=>defaults[count]=0);
+Object.values(forgeTierMaterialCountByName).forEach(count=>defaults[count]=0);defaults.equipmentSpiritCore=0;defaults.productionMaterialStorageVersion=0;
 defaults.equipmentInventory=[];defaults.equippedItems={};defaults.pillUsage={};defaults.craftingTier=1;defaults.craftingQuality='normal';defaults.craftingSlot='crown';defaults.craftingPill='yuanxi';
 pillTypes.forEach(([key])=>{for(let tier=1;tier<=9;tier++)defaults[`pillCount_${key}_${tier}`]=0});
-defaults.brewUsage={};defaults.brewCraftDaily={date:'',normal:0,rare:0};defaults.craftingBrew='yuanxi';defaults.craftingBrewQuality='normal';defaults.sectBrewExchangeDaily={date:'',normal:0,rare:0};
+defaults.brewUsage={};defaults.brewCraftDaily={date:'',normal:0,rare:0};defaults.craftingBrew='yuanxi';defaults.craftingBrewQuality='normal';defaults.sectBrewExchangeDaily={date:'',normal:0,rare:0,counts:{}};
 ['normal','rare'].forEach(quality=>{defaults[`brewBase_${quality}`]=0;brewTypes.forEach(([key])=>defaults[`brewCount_${key}_${quality}`]=0)});
 let state = { ...defaults }, tickStart = Date.now(), manualCultivationStartedAt=0, manualCultivationTimer=null, breakthroughInProgress=false;
 const saveKey = 'wendao-changsheng-release-v1';
@@ -1020,6 +1040,12 @@ function load() {
 }
 function normalizeMainlineMaterialItems(){if((state.mainlineMaterialMigration||0)>=1)return;const legacy=state.mainlineMaterials&&typeof state.mainlineMaterials==='object'?state.mainlineMaterials:{};mainlineMaterials.forEach(([,key])=>{const count=`mainlineMaterial_${key}`;state[count]=Math.max(0,Math.floor(Number(state[count])||0))+Math.max(0,Math.floor(Number(legacy[key])||0))});state.mainlineMaterials={};state.mainlineMaterialMigration=1}
 function normalizeCraftingMaterialItems(){if((state.craftingMaterialMigration||0)>=1)return;state.mainlineLoot=state.mainlineLoot&&typeof state.mainlineLoot==='object'?state.mainlineLoot:{};craftingMaterialItems.forEach(([name,count])=>{state[count]=Math.max(0,Math.floor(Number(state[count])||0))+Math.max(0,Math.floor(Number(state.mainlineLoot[name])||0));delete state.mainlineLoot[name]});state.craftingMaterialMigration=1}
+function normalizeProductionMaterialStorage(){
+  if((state.productionMaterialStorageVersion||0)>=1)return false;
+  state.mainlineLoot=state.mainlineLoot&&typeof state.mainlineLoot==='object'?state.mainlineLoot:{};
+  [...tierMaterials,'器靈精魄'].forEach(name=>{const count=productionMaterialCountByName[name];state[count]=Math.max(0,Math.floor(Number(state[count])||0))+Math.max(0,Math.floor(Number(state.mainlineLoot[name])||0));delete state.mainlineLoot[name]});
+  state.productionMaterialStorageVersion=1;return true;
+}
 function migrateSectName(){
   if(!state.sect)return;const all=sectCatalog.flatMap(g=>[...g.good,...g.evil]);if(all.includes(state.sect))return;
   const group=sectCatalog.find(g=>g.star===state.sectStar)||sectCatalog[0],pool=state.sectFaction==='邪'?group.evil:group.good;
@@ -1171,7 +1197,7 @@ function openFirstPathChoice(){
 function chooseFirstPath(path){
   if(!cultivationPathMeta[path])return;
   if(state.firstPath){$('#firstPathModal')?.classList.remove('show');render();save();return}
-  state.free=state.free>=noviceCultivationNeed?state.free-noviceCultivationNeed:0n;state.firstPath=path;state.activePath=path;state.cultivationAwakened=true;state.tutorialCompleted=true;state.spiritPathOpened=path==='spirit';state.swordPathOpened=path==='sword';state.bodyPathOpened=path==='body';
+  state.free=state.free>=noviceCultivationNeed?state.free-noviceCultivationNeed:0n;state.firstPath=path;state.activePath=path;state.cultivationAwakened=true;state.tutorialCompleted=true;state.spiritPathOpened=path==='spirit';state.swordPathOpened=path==='sword';state.bodyPathOpened=path==='body';syncSectTaskRouteUnlocks(path);
   state.swordMoves=path==='body'?['body-origin']:['origin'];breakthroughInProgress=false;$('#heroArt').classList.remove('breakthrough-absorb');$('#firstPathModal')?.classList.remove('show');render();startPathBgm(path);save();toast(`已踏入${cultivationPathMeta[path].name}之路・其餘兩道可於兼修開啟`);
   if(path==='sword')setTimeout(()=>openPrimarySwordView('sword'),350);
 }
@@ -1279,7 +1305,7 @@ function upgrade(type) {
     const gain=bodyAttributeGain(state.bodyLevel+1);state.bodyLevel++;resetBodyFoundations();applyAttributeGain(gain);
     toast(`已提升至${realmName(state.bodyLevel,bodyRealms)}`);
   }
-  render();
+  syncSectTaskRouteUnlocks(type);render();
   if(!spirit&&!sword&&currentFeature==='experience')renderExperiencePanel('body');
   save();
 }
@@ -1295,7 +1321,7 @@ async function openCultivationPath(type){
     if(!await gameConfirm(`是否正式兼修${meta.name}？\n\n${description}\n\n需要消耗：${cost.label} ${formatLargeNumber(cost.amount)}\n目前持有：${formatLargeNumber(held)}`,{title:`兼修${meta.name}`,confirmText:`踏入${meta.realm}`}))return false;
     state[cost.key]-=cost.amount;if(type==='body')state.food+=30;state[key]=true;if(type==='body'&&!(state.swordMoves||[]).length)state.swordMoves=['body-origin'];toast(`已開啟${meta.name}之路・${meta.realm}${type==='body'?'・獲得起步口糧30':''}`);
   }
-  render();if(currentFeature==='experience')renderExperiencePanel('overview');save();return true;
+  syncSectTaskRouteUnlocks(type);render();if(currentFeature==='experience')renderExperiencePanel('overview');save();return true;
 }
 async function switchCultivationScene(path){
   if(!cultivationPathMeta[path]||path===state.activePath)return;
@@ -1348,7 +1374,7 @@ function tribulate() {
     if(!sessionOnline){cleanupTribulationScene();return}
     scene.classList.add('show-result',success?'result-success':'result-failure');
     if(success) {
-      const gain=spiritAttributeGain(state.spiritLevel+1);state.free-=cost;state.spiritLevel++;applyAttributeGain(gain);recordQiFoundationMark();queueRealmEncounter('spirit',state.spiritLevel);
+      const gain=spiritAttributeGain(state.spiritLevel+1);state.free-=cost;state.spiritLevel++;applyAttributeGain(gain);recordQiFoundationMark();syncSectTaskRouteUnlocks('spirit');queueRealmEncounter('spirit',state.spiritLevel);
       $('#tribulationResultSeal').textContent='成';$('#tribulationResultTitle').textContent='渡劫成功';$('#tribulationResultText').textContent=`境界提升至 ${realmName(state.spiritLevel,spiritRealms)}${state.spiritLevel===40&&!state.mindEmbodimentUnlocked?'・習得意念入體':''}`;
     } else {
       const lossPercent=50-Math.min(3,state.qiHeartTraits?.guard||0)*5,loss=(cost*BigInt(lossPercent)+99n)/100n;state.free=state.free>loss?state.free-loss:0n;
@@ -1376,7 +1402,7 @@ async function startSwordBreakthrough(cost=swordReq(state.swordLevel||0)){
   scheduleTribulation(()=>{scene.classList.remove('sword-rebirth');scene.classList.add('sword-final');$('#tribulationSceneText').textContent='本命劍突破大境界'},10000);
   let completed=false;const complete=()=>{
     if(completed)return;completed=true;
-    if(!sessionOnline){cleanupTribulationScene();return}state.swordEssence-=cost;state.swordLevel=next;if(path!=='unmarked'&&!state.swordPathMarks.some(mark=>mark.level===next))state.swordPathMarks.push({level:next,path});applyAttributeGain(gain);const labels={agility:'游影',trueQi:'元息',spiritualPower:'銳識'},gainText=Object.entries(gain).filter(([,value])=>value>0).map(([key,value])=>`${labels[key]}＋${value}`).join('・');scene.classList.add('show-result','result-success');$('#tribulationResultSeal').textContent='鋒';$('#tribulationResultTitle').textContent='本命劍突破大境界';$('#tribulationResultText').textContent=`${state.swordName||'無名靈劍'}・${realmName(state.swordLevel,swordRealms)}｜${gainText}｜${swordPaths[path].name}`;render();save();
+    if(!sessionOnline){cleanupTribulationScene();return}state.swordEssence-=cost;state.swordLevel=next;if(path!=='unmarked'&&!state.swordPathMarks.some(mark=>mark.level===next))state.swordPathMarks.push({level:next,path});applyAttributeGain(gain);syncSectTaskRouteUnlocks('sword');const labels={agility:'游影',trueQi:'元息',spiritualPower:'銳識'},gainText=Object.entries(gain).filter(([,value])=>value>0).map(([key,value])=>`${labels[key]}＋${value}`).join('・');scene.classList.add('show-result','result-success');$('#tribulationResultSeal').textContent='鋒';$('#tribulationResultTitle').textContent='本命劍突破大境界';$('#tribulationResultText').textContent=`${state.swordName||'無名靈劍'}・${realmName(state.swordLevel,swordRealms)}｜${gainText}｜${swordPaths[path].name}`;render();save();
   };
   if(cinematic){const video=$('#swordCinematicVideo');video.onended=complete;scheduleTribulation(complete,18000)}else scheduleTribulation(complete,11000);
 }
@@ -1584,7 +1610,7 @@ function openDivineRoamingStage(id){if(!state.divineRoamingUnlocked)return openD
 function startDivineRoaming(stage,total){processDivineRoaming();const daily=divineRoamingDaily(),job=state.divineRoamingJob,active=job&&job.completed<job.total,maxCount=Math.max(0,daily.remaining-(active?1:0));state.divineRoamingTimingVersion=2;if(active){if(job.stageId===stage.id)return toast('神念目前正在此地圖遠遊');if(total>maxCount)return toast('今日神念遠遊次數不足');job.pendingStageId=stage.id;job.pendingTotal=total;save();openDivineRoamingStage(stage.id);toast(`本次結束後將轉往${stage.name}`);return}if(total>daily.remaining)return toast('今日神念遠遊次數不足');state.divineRoamingJob={stageId:stage.id,total,completed:0,startedAt:gameNow(),nextAt:gameNow()+divineRoamingAttemptMs};save();openDivineRoamingStage(stage.id);toast(`神念已前往${stage.name}`)}
 function updateDivineRoamingTimer(){const root=$('.divine-roaming-window[data-divine-selected-stage]');if(!root)return;const wasActive=root.dataset.divineActive==='true';processDivineRoaming();const job=state.divineRoamingJob,active=!!job&&job.completed<job.total;if(wasActive&&!active)return openDivineRoamingStage(+root.dataset.divineSelectedStage);root.dataset.divineActive=String(active);const timer=divineRoamingTimerState(),text=$('#divineRoamingTimerText'),bar=$('#divineRoamingTimerBar'),status=$('#divineRoamingLiveStatus');if(text)text.textContent=timer.active?divineRoamingClock(timer.remaining):'尚未開始';if(bar)bar.style.width=`${timer.percent}%`;if(status)status.textContent=divineRoamingStatus()}
 function openDivineHarvest(){processDivineRoaming();const entries=Object.values(state.divineRoamingHarvest||{}),job=state.divineRoamingJob,active=job&&job.completed<job.total;let modal=$('#divineRoamingModal');if(!modal){modal=document.createElement('div');modal.id='divineRoamingModal';modal.className='divine-roaming-modal';document.body.append(modal)}modal.innerHTML=`<section class="divine-roaming-window divine-harvest-window"><button class="divine-close">×</button><h2>神念遠遊・臨時儲物袋</h2><p>${divineRoamingStatus()}・臨時袋沒有容量上限</p><div class="divine-harvest-grid">${entries.length?entries.map(x=>`<span><b>${x.name}</b><strong>× ${formatLargeNumber(x.amount)}</strong></span>`).join(''):'<small>目前尚無遠遊收益</small>'}</div><div class="divine-harvest-actions"><button id="claimDivineHarvest" ${entries.length?'':'disabled'}>提取全部收益</button>${active?`<button id="requestDivineReturn" class="divine-return-button" ${job.returnRequested?'disabled':''}>${job.returnRequested?'等待本次結束・神念回歸':'神念回歸'}</button>`:''}</div>${active?'<small>提取不會中斷遠遊；神念回歸會在本次結算後生效。</small>':''}</section>`;modal.classList.add('show');modal.querySelector('.divine-close').onclick=()=>modal.classList.remove('show');$('#claimDivineHarvest').onclick=claimDivineHarvest;if($('#requestDivineReturn'))$('#requestDivineReturn').onclick=requestDivineReturn}
-function claimDivineHarvest(){const entries=Object.values(state.divineRoamingHarvest||{});if(!entries.length)return;const physicalCount=x=>x.type==='state'?x.key:craftingMaterialCountByName[x.key],itemCounts=new Set(Object.values(itemCatalog).map(item=>item.count)),deltas=entries.map(x=>[physicalCount(x),x.amount]).filter(([count])=>count&&itemCounts.has(count));if(!canStoreBagCounts(deltas))return toast('角色儲物袋容量不足');entries.forEach(x=>{const count=physicalCount(x);if(count)state[count]=(state[count]||0)+x.amount;else{state.mainlineLoot=state.mainlineLoot||{};state.mainlineLoot[x.key]=(state.mainlineLoot[x.key]||0)+x.amount}});state.divineRoamingHarvest={};save();render();openDivineHarvest();toast('遠遊收益已提取至角色儲物袋')}
+function claimDivineHarvest(){const entries=Object.values(state.divineRoamingHarvest||{});if(!entries.length)return;const physicalCount=x=>x.type==='state'?x.key:productionMaterialCountByName[x.key],itemCounts=new Set(Object.values(itemCatalog).map(item=>item.count)),deltas=entries.map(x=>[physicalCount(x),x.amount]).filter(([count])=>count&&itemCounts.has(count));if(!canStoreBagCounts(deltas))return toast('角色儲物袋容量不足');entries.forEach(x=>{const count=physicalCount(x);if(count)state[count]=(state[count]||0)+x.amount;else{state.mainlineLoot=state.mainlineLoot||{};state.mainlineLoot[x.key]=(state.mainlineLoot[x.key]||0)+x.amount}});state.divineRoamingHarvest={};save();render();openDivineHarvest();toast('遠遊收益已提取至角色儲物袋')}
 function renderMortalMainline(inner=$('#experienceInner')){
   const cleared=Math.max(0,state.mainlineCleared||0),available=Math.min(18,cleared+1),progressRealm=worldProgressTier();
   inner.innerHTML=`<section class="mainline-header"><div><small>九境・十八關</small><h2>九鎖封天</h2><p>每關首次通關可取得一次固定獎勵；之後可重溫完整劇情與戰鬥但不再掉落，持續取得素材需靠神念遠遊。</p></div><strong>${cleared} / 18</strong></section><div class="mainline-stage-grid">${mortalMainline.map(stage=>{const storyLocked=stage.id>available,realmLocked=stage.realm>progressRealm,locked=storyLocked||realmLocked,done=stage.id<=cleared,lockText=storyLocked?`通過第 ${stage.id-1} 關開啟`:`需任一路線達第 ${stage.realm} 境`;return `<article class="mainline-stage ${done?'cleared':''} ${locked?'locked':''}" style="--stage-bg:url('${stage.image}')"><button class="mainline-stage-entry" data-mainline-stage="${stage.id}" ${locked?'disabled':''}><span>${mainlineArcName(stage.id)}・第 ${stage.id} 關・第 ${stage.realm} 境</span><b>${stage.name}</b><small>${locked?lockText:stage.summary}</small><em>${done?'重溫劇情與戰鬥・無重複獎勵':`固定首通獎勵・共 ${mainlineFirstClearRewards[stage.id-1].length} 項`}</em><i>Boss・${stage.boss}</i></button>${done&&state.divineRoamingUnlocked?`<button class="mainline-roaming-button" data-divine-stage="${stage.id}">神念遠遊・取得素材</button>`:''}</article>`}).join('')}</div>`;
@@ -1769,15 +1795,37 @@ function restoreSectRecord(pick,preserveTiming=false){state.sectRecords=state.se
 function normalizeSectRecords(){state.sectRecords=state.sectRecords&&typeof state.sectRecords==='object'?state.sectRecords:{};const legacyRecords=Object.values(state.sectRecords);state.lastSalaryDay=[state.lastSalaryDay,...legacyRecords.map(record=>record?.lastSalaryDay)].filter(Boolean).sort().at(-1)||'';state.lastPracticeDay=[state.lastPracticeDay,...legacyRecords.map(record=>record?.lastPracticeDay)].filter(Boolean).sort().at(-1)||'';Object.entries(state.sectRecords).forEach(([name,value])=>{const meta=sectMetaByName(name);if(!meta){delete state.sectRecords[name];return}state.sectRecords[name]={...sectRecordTemplate(meta),...(value&&typeof value==='object'?value:{}),...meta,visited:true};delete state.sectRecords[name].npcAffinity;delete state.sectRecords[name].lastSalaryDay;delete state.sectRecords[name].lastPracticeDay;state.sectRecords[name].npcDaily=normalizeNpcDailyLog(state.sectRecords[name].npcDaily);refreshSectDiscovery(state.sectRecords[name],name,meta.star)});if(!state.sect)return;const meta=sectMetaByName(state.sect)||{name:state.sect,faction:state.sectFaction,star:state.sectStar},existing=state.sectRecords[state.sect],legacyRank=Math.max(0,Math.min(sectRanks.length-1,Math.floor(state.sectRank||0))),legacyMerit=Math.max(Math.floor(state.sectMerit||0),sectPromotionCosts[Math.max(0,legacyRank-1)]||0,Math.floor(state.sectContribution||0));if(!existing)state.sectRecords[state.sect]={...sectRecordTemplate(meta),merit:legacyMerit,contribution:Math.max(0,Math.floor(state.sectContribution||0)),rank:legacyRank,task:state.sectTask||'',actingLeader:!!state.actingLeader,npcDaily:normalizeNpcDailyLog(state.npcDaily),lastGreetingDay:state.lastGreetingDay||''};else{existing.merit=Math.max(existing.merit||0,legacyMerit);existing.contribution=Math.max(existing.contribution||0,Math.floor(state.sectContribution||0));existing.rank=Math.max(existing.rank||0,legacyRank)}restoreSectRecord(meta,true)}
 function sectExperienceBonus(){const experienced=Object.values(state.sectRecords||{}).filter(record=>(record.rank||0)>=2).length;return Math.min(.5,experienced*.05)}
 function sectInfo(){return sectCatalog.find(x=>x.star===state.sectStar)}
-function selectedSectTask(){return sectTasks.find(x=>x.id===state.sectTask)}
-function sectTaskPathGain(task=selectedSectTask()){return task?1+Math.floor(task.need/40):1}
+const sectTaskPathOrder=['spirit','sword','body'];
+function sectPathMajorRealm(path){if(!pathOpened(path))return 0;const level=path==='spirit'?state.spiritLevel:path==='sword'?state.swordLevel:state.bodyLevel;return Math.max(1,Math.floor(Math.max(0,Number(level)||0)/10)+1)}
+function highestSectTaskRealm(){return Math.max(...sectTaskPathOrder.map(sectPathMajorRealm),0)}
+function inferSectTaskPath(realm,triggerPath=''){
+  const candidates=sectTaskPathOrder.filter(path=>sectPathMajorRealm(path)>=realm);if(!candidates.length)return '';
+  if(candidates.includes(triggerPath))return triggerPath;
+  const highest=Math.max(...candidates.map(sectPathMajorRealm)),leaders=candidates.filter(path=>sectPathMajorRealm(path)===highest);
+  if(leaders.includes(state.firstPath))return state.firstPath;if(leaders.includes(state.activePath))return state.activePath;return leaders[0];
+}
+function syncSectTaskRouteUnlocks(triggerPath=''){
+  const previous=state.sectTaskRouteUnlocks&&typeof state.sectTaskRouteUnlocks==='object'?state.sectTaskRouteUnlocks:{};state.sectTaskRouteUnlocks={};
+  Object.entries(previous).forEach(([id,path])=>{if(sectTasks.some(task=>task.id===id)&&sectTaskPathOrder.includes(path))state.sectTaskRouteUnlocks[id]=path});
+  const highest=highestSectTaskRealm();sectTasks.forEach(task=>{if(task.realm<=highest&&!state.sectTaskRouteUnlocks[task.id])state.sectTaskRouteUnlocks[task.id]=inferSectTaskPath(task.realm,triggerPath)});
+  return state.sectTaskRouteUnlocks;
+}
+function normalizeSectTaskSystem(){
+  const before=JSON.stringify(state.sectTaskRouteUnlocks||{});syncSectTaskRouteUnlocks();const selected=sectTasks.find(task=>task.id===state.sectTask);
+  if(selected&&selected.realm>highestSectTaskRealm()){const fallback=sectTasks.filter(task=>task.realm<=highestSectTaskRealm()).at(-1);state.sectTask=fallback?.id||''}
+  return before!==JSON.stringify(state.sectTaskRouteUnlocks||{});
+}
+function resolvedSectTask(task){if(!task)return null;const path=state.sectTaskRouteUnlocks?.[task.id]||inferSectTaskPath(task.realm),variant=task.variants[path]||['未定任務','由最先達標的修行道路決定任務內容。'];return {...task,path,name:variant[0],desc:variant[1]}}
+function selectedSectTask(){let task=sectTasks.find(x=>x.id===state.sectTask);if(task&&task.realm>highestSectTaskRealm()){task=sectTasks.filter(entry=>entry.realm<=highestSectTaskRealm()).at(-1);state.sectTask=task?.id||''}return task?resolvedSectTask(task):null}
+function sectTaskPathGain(task=selectedSectTask()){return task?Math.min(3,1+Math.floor((task.realm-1)/4)):1}
+function sectTaskAnnualGain(task=selectedSectTask()){return task?Math.min(50,Math.floor(task.gain*(1+sectExperienceBonus()))):0}
 function processSectYears(){
   if(!state.sect||!state.sectJoinedAt)return false;
   const total=Math.floor((gameNow()-state.sectJoinedAt)/900000),delta=Math.max(0,total-state.sectYearsProcessed);
   if(!delta)return false;
   state.sectYearsProcessed=total;
   const task=selectedSectTask(),pathGain=delta*(task?sectTaskPathGain(task):1);if(state.sectFaction==='正')state.righteousness+=pathGain;else state.evilQi+=pathGain;
-  if(task){const sectGain=Math.floor(task.gain*delta*(1+sectExperienceBonus()));state.sectMerit+=sectGain;state.sectContribution+=sectGain;state.spiritStone+=task.stone*delta;state.prestige+=task.prestige*delta;syncCurrentSectRecord()}return true;
+  if(task){const sectGain=sectTaskAnnualGain(task)*delta;state.sectMerit+=sectGain;state.sectContribution+=sectGain;state.spiritStone+=task.stone*delta;state.prestige+=task.prestige*delta;syncCurrentSectRecord()}return true;
 }
 function sectDescription(){
   const index=npcSeed(),places=['青峰疊翠的雲海深處','千瀑交織的靈谷之中','終年星輝垂落的高原','古木遮天的幽靜山脈','浩蕩天河環繞的浮島','地火與寒泉交會的秘境','萬丈孤峰之巔','遠離塵世的上古洞天','雷雲不散的天外山門','潮汐靈脈匯聚的海崖','日月同輝的仙家福地'];
@@ -1835,7 +1883,7 @@ function renderSectView(view){
   if(view==='shop'){renderSectShop();return}
   if(view==='learning'){renderSectLearning();return}
   if(view==='journal'){const records=Object.values(state.sectRecords||{}).filter(record=>record.visited).sort((a,b)=>a.star-b.star||a.name.localeCompare(b.name,'zh-Hant')),discoveryText=record=>{refreshSectDiscovery(record);const rare=sectRareTechnique(record.name,record.star);return record.discovery==='obtained'&&rare?`已取得・${rare.name}`:record.discovery==='confirmed'&&rare?`已確認・${artKinds[rare.kind].tab}傳承`:record.discovery==='hinted'?'門中似有未明線索':record.discovery==='explored'?'目前未發現更深線索':'尚待探索'};inner.innerHTML=`<section class="sect-journal"><header><small>只記錄親身拜入後所知之事</small><h2>門派見聞</h2></header><div class="sect-journal-list">${records.map(record=>`<article><span>${['一','二','三','四','五','六','七','八','九'][record.star-1]}星・${record.faction}</span><b>${record.name}</b><small>${sectRanks[record.rank||0]}・功勳 ${formatLargeNumber(record.merit||0)}・貢獻 ${formatLargeNumber(record.contribution||0)}</small><em>${discoveryText(record)}</em></article>`).join('')}</div></section>`;return}
-  if(view==='tasks'){const progress=worldProgressLevel(),bonus=Math.round(sectExperienceBonus()*100);inner.innerHTML=`<header class="sect-facility-heading"><small>門派設施・任務承接</small><h2>執事堂</h2></header><div class="task-list">${sectTasks.map(t=>`<button data-task="${t.id}" class="task-card ${state.sectTask===t.id?'active':''}" ${progress<t.need?'disabled':''}><b>${t.name}</b><span>每年：功勳與貢獻各+${t.gain}・靈石+${t.stone}・聲望+${t.prestige}</span><small>${t.desc}</small><em>${state.sectTask===t.id?'已接取':progress>=t.need?'可接取':`需${worldProgressGateText(t.need)}`}</em></button>`).join('')}</div><p class="sect-note">任務會持續執行；門派閱歷使功勳與貢獻獲取 +${bonus}%。脫離後任務停止，本門進度保留。</p>`;$$('.task-card:not(:disabled)').forEach(b=>b.onclick=()=>{state.sectTask=b.dataset.task;toast(`開始持續任務：${selectedSectTask().name}`);renderSectView('tasks');save()});return}
+  if(view==='tasks'){syncSectTaskRouteUnlocks();const progress=highestSectTaskRealm(),bonus=Math.round(sectExperienceBonus()*100);inner.innerHTML=`<header class="sect-facility-heading"><small>門派設施・三路最高第 ${progress} 境</small><h2>執事堂</h2></header><div class="task-list">${sectTasks.map(t=>{const unlocked=progress>=t.realm,resolved=unlocked?resolvedSectTask(t):null,annual=unlocked?sectTaskAnnualGain(resolved):t.gain,pathName=resolved?cultivationPathMeta[resolved.path].name:'路線待定';return `<button data-task="${t.id}" class="task-card ${state.sectTask===t.id?'active':''}" ${unlocked?'':'disabled'}><i>${pathName}・第 ${t.realm} 境</i><b>${resolved?.name||'尚未顯現的門派任務'}</b><span>每年：功勳與貢獻各+${annual}・靈石+${formatLargeNumber(t.stone)}・聲望+${t.prestige}</span><small>${resolved?.desc||'由最先令三路最高境界跨過此門檻的修行道路決定，解鎖後永久保留。'}</small><em>${state.sectTask===t.id?'已接取':unlocked?'可接取':`需三路最高達第 ${t.realm} 大境界`}</em></button>`}).join('')}</div><p class="sect-note">任務會持續執行；每道門檻只取三路最高進度，首次達標路線會永久決定該任務。門派閱歷目前加成 ${bonus}%，但功勳與貢獻實際每年最高各 +50。</p>`;$$('.task-card:not(:disabled)').forEach(b=>b.onclick=()=>{state.sectTask=b.dataset.task;toast(`開始持續任務：${selectedSectTask().name}`);renderSectView('tasks');save()});return}
   if(view==='practice'){
     const can=state.sectRank>=1,done=state.lastPracticeDay===dateKey(),practiceOn=buffActive('practiceBuff'),transmissionOn=buffActive('transmissionBuff');
     const practiceReason=!can?'需晉升內門弟子':done?'今日已完成':state.spiritStone<300?`尚缺 ${Math.ceil(300-state.spiritStone)} 靈石`:'開始練功';
@@ -1843,13 +1891,29 @@ function renderSectView(view){
     $('#dailyPractice').onclick=dailyPractice;$$('[data-transmit]').forEach(b=>{b.disabled=transmissionOn||!can||state.spiritJade<+b.dataset.cost;b.onclick=()=>masterTransmission(+b.dataset.transmit,+b.dataset.cost)});return
   }
 }
+const sectShopGroups=[
+  {id:'brew',name:'釀坊原釀',note:'凡品、極品原釀每日各限換 1 瓶。',offers:[
+    {id:'brew-normal',itemId:'brew-base-normal',price:120,limit:1,legacyKey:'normal'},
+    {id:'brew-rare',itemId:'brew-base-rare',price:300,limit:1,legacyKey:'rare'}
+  ]},
+  {id:'alchemy',name:'丹藥素材',note:'四象主藥與丹砂每種每日限換 10 份。',offers:craftingMaterialItems.map(([name,count],index)=>({id:`alchemy-${count}`,itemId:`craft-material-${count}`,price:index===4?10:15,limit:10}))},
+  {id:'equipment-main',name:'裝備主材',note:'七類部位主材每種每日限換 10 份。',offers:mainlineMaterials.map(([,key])=>({id:`equipment-main-${key}`,itemId:`main-material-${key}`,price:18,limit:10}))},
+  {id:'equipment-tier',name:'裝備階材',note:'階材隨三路最高境界開放，每種每日限換 10 份。',offers:tierMaterials.map((name,index)=>({id:`equipment-tier-${index+1}`,itemId:`forge-tier-material-${index+1}`,price:[15,22,30,42,56,72,90,110,135][index],limit:10,unlockTier:index+1}))},
+  {id:'equipment-rare',name:'極品珍材',note:'器靈精魄每日限換 2 枚，專供極品裝備使用。',offers:[{id:'equipment-spirit-core',itemId:'equipmentSpiritCore',price:500,limit:2}]}
+];
+function sectShopExchangeState(){const today=dateKey()||'local';if(state.sectBrewExchangeDaily?.date!==today)state.sectBrewExchangeDaily={date:today,normal:0,rare:0,counts:{}};state.sectBrewExchangeDaily.counts=state.sectBrewExchangeDaily.counts&&typeof state.sectBrewExchangeDaily.counts==='object'?state.sectBrewExchangeDaily.counts:{};state.sectBrewExchangeDaily.normal=Math.max(0,Math.floor(state.sectBrewExchangeDaily.normal||0));state.sectBrewExchangeDaily.rare=Math.max(0,Math.floor(state.sectBrewExchangeDaily.rare||0));return state.sectBrewExchangeDaily}
+function sectShopOfferBought(offer,record=sectShopExchangeState()){return offer.legacyKey?record[offer.legacyKey]||0:Math.max(0,Math.floor(record.counts[offer.id]||0))}
+function sectShopOfferButton(offer,bought){if(offer.unlockTier&&offer.unlockTier>productionMaxTier())return `${offer.unlockTier}階開放`;if(bought>=offer.limit)return '今日已換足';if(state.sectContribution<offer.price)return '貢獻不足';return '兌換 1 份'}
 function renderSectShop(){
-  const inner=$('#sectInner');
-  const daily=sectBrewExchangeState(),cost={normal:120,rare:300};
-  inner.innerHTML=`<section class="sect-shop"><div class="shop-heading"><small>門派設施・物資兌換</small><h2>功勳堂</h2><span>門派貢獻 ${formatLargeNumber(state.sectContribution)}</span></div>${['normal','rare'].map(quality=>{const item=itemCatalog[`brew-base-${quality}`],done=daily[quality]>=1;return `<article class="shop-item"><img src="${item.image}" alt="${item.name}"><div class="shop-item-copy"><b>${item.name}</b><p>${item.description}</p><strong>門派貢獻 ${cost[quality]}</strong><small>每日限換 1 瓶・今日 ${daily[quality]}／1</small></div><div class="shop-actions"><button data-sect-brew="${quality}" ${done||state.sectContribution<cost[quality]?'disabled':''}>${done?'今日已換':'兌換'}</button></div></article>`}).join('')}</section>`;
-  $$('[data-sect-brew]').forEach(button=>button.onclick=()=>{const quality=button.dataset.sectBrew,costs={normal:120,rare:300},record=sectBrewExchangeState();if(record[quality]>=1)return toast('此原釀今日已達兌換上限');if(state.sectContribution<costs[quality])return toast('門派貢獻不足');if(!canStoreItem(`brew-base-${quality}`))return toast('儲物袋已滿');state.sectContribution-=costs[quality];state[`brewBase_${quality}`]=(state[`brewBase_${quality}`]||0)+1;record[quality]++;save();renderSectShop();render();toast(`兌得${itemCatalog[`brew-base-${quality}`].name}`)});
+  const inner=$('#sectInner');if(!inner)return;const daily=sectShopExchangeState();
+  inner.innerHTML=`<section class="sect-shop"><div class="shop-heading"><small>門派設施・每日物資兌換</small><h2>功勳堂</h2><span>門派貢獻 ${formatLargeNumber(state.sectContribution)}</span></div>${sectShopGroups.map(group=>`<section class="sect-shop-group"><header><h3>${group.name}</h3><small>${group.note}</small></header><div class="sect-shop-grid">${group.offers.map(offer=>{const item=itemCatalog[offer.itemId],bought=sectShopOfferBought(offer,daily),locked=offer.unlockTier&&offer.unlockTier>productionMaxTier(),disabled=locked||bought>=offer.limit||state.sectContribution<offer.price;return `<article class="shop-item compact ${locked?'locked':''}"><img src="${item.image}" alt="${item.name}"><div class="shop-item-copy"><b>${item.name}</b><strong>門派貢獻 ${offer.price}</strong><small>持有 ${formatLargeNumber(state[item.count]||0)}・今日 ${bought}／${offer.limit}</small></div><div class="shop-actions"><button data-sect-shop-offer="${offer.id}" ${disabled?'disabled':''}>${sectShopOfferButton(offer,bought)}</button></div></article>`}).join('')}</div></section>`).join('')}</section>`;
+  $$('[data-sect-shop-offer]').forEach(button=>button.onclick=()=>purchaseSectShopOffer(button.dataset.sectShopOffer));
 }
-function sectBrewExchangeState(){const today=dateKey()||'local';if(state.sectBrewExchangeDaily?.date!==today)state.sectBrewExchangeDaily={date:today,normal:0,rare:0};return state.sectBrewExchangeDaily}
+function purchaseSectShopOffer(id){
+  const offer=sectShopGroups.flatMap(group=>group.offers).find(entry=>entry.id===id);if(!offer)return;const item=itemCatalog[offer.itemId],record=sectShopExchangeState(),bought=sectShopOfferBought(offer,record);
+  if(offer.unlockTier&&offer.unlockTier>productionMaxTier())return toast(`三路最高達第 ${offer.unlockTier} 大境界後開放`);if(bought>=offer.limit)return toast(`${item.name}今日已達兌換上限`);if(state.sectContribution<offer.price)return toast('門派貢獻不足');if(!canStoreItem(offer.itemId))return toast('儲物袋已滿');
+  state.sectContribution-=offer.price;state[item.count]=(state[item.count]||0)+1;if(offer.legacyKey)record[offer.legacyKey]=(record[offer.legacyKey]||0)+1;else record.counts[offer.id]=(record.counts[offer.id]||0)+1;save();renderSectShop();render();toast(`兌得${item.name} ×1`);
+}
 function registerEquipmentItems(){(state.equipmentInventory||[]).forEach(e=>{const key=`equipment-${e.id}`,slot=equipmentSlots.find(x=>x[0]===e.slot),stat=e.affixes?.length?e.affixes.map(x=>`${x.element}系功法效果 +${x.value.toFixed(1)}%`).join('、'):`${e.label}+${e.value}`;itemCatalog[key]={name:`${e.quality==='rare'?'極品':'凡品'}·${equipmentSets[e.tier-1]}${slot[1]}`,image:`assets/qstyle-v2/production/equipment/${e.slot}-t${e.tier}.png`,description:`器室製成的${equipmentSets[e.tier-1]}階${slot[1]}。${stat}`,count:`equipmentCount_${e.id}`,usable:true,giftable:false,sellPrice:1,equipmentData:e};if(state[`equipmentCount_${e.id}`]==null)state[`equipmentCount_${e.id}`]=1})}
 function normalizeEquipmentLoadout(){
   state.equipmentInventory=Array.isArray(state.equipmentInventory)?state.equipmentInventory:[];state.equippedItems=state.equippedItems&&typeof state.equippedItems==='object'?state.equippedItems:{};
@@ -2142,7 +2206,7 @@ function finishBattle(won,reason){
   let reward='';
   if(won&&battle.mode==='master'){state.actingLeader=true;reward=' 已取得代理掌門身分。'}
   else if(battle.mode==='swordTrial'){if(won){const stage=state.swordTrialWins+1,intent=swordTrialIntentReward(stage);state.swordTrialWins++;state.swordInsight++;state.swordIntent+=intent;reward=` 戰鬥感悟+1${intent?`、劍意+${intent}`:''}。`;}else reward=' 本關沒有消耗挑戰次數，可調整劍招後再戰。'}
-  else if(battle.mode==='bodyTrial'){const trialLevel=battle.bodyTrialLevel||state.bodyLevel+1,key=String(trialLevel);if(won){if(trialLevel===state.bodyLevel+1&&bodyFoundationsReady()&&bodyBreakthroughMaterialsReady(battle.bodyRequirement)){consumeBodyBreakthroughMaterials(battle.bodyRequirement);state.bodyLevel++;resetBodyFoundations();state.bodyTrialFailures[key]=0;applyAttributeGain(bodyAttributeGain(state.bodyLevel));reward=` 突破物資已投入，肉身突破至${realmName(state.bodyLevel,bodyRealms)}。`}else reward=' 試煉資格已失效，未完成突破。'}else{state.bodyTrialFailures[key]=(state.bodyTrialFailures[key]||0)+1;const injury=Math.random()<.6?'internal':'tendon';inflictBodyInjury(injury);reward=` 突破物資完整保留；留下${bodyInjuries[injury].name}。此境已失敗 ${state.bodyTrialFailures[key]} 次。`}}
+  else if(battle.mode==='bodyTrial'){const trialLevel=battle.bodyTrialLevel||state.bodyLevel+1,key=String(trialLevel);if(won){if(trialLevel===state.bodyLevel+1&&bodyFoundationsReady()&&bodyBreakthroughMaterialsReady(battle.bodyRequirement)){consumeBodyBreakthroughMaterials(battle.bodyRequirement);state.bodyLevel++;resetBodyFoundations();state.bodyTrialFailures[key]=0;applyAttributeGain(bodyAttributeGain(state.bodyLevel));syncSectTaskRouteUnlocks('body');reward=` 突破物資已投入，肉身突破至${realmName(state.bodyLevel,bodyRealms)}。`}else reward=' 試煉資格已失效，未完成突破。'}else{state.bodyTrialFailures[key]=(state.bodyTrialFailures[key]||0)+1;const injury=Math.random()<.6?'internal':'tendon';inflictBodyInjury(injury);reward=` 突破物資完整保留；留下${bodyInjuries[injury].name}。此境已失敗 ${state.bodyTrialFailures[key]} 次。`}}
   else if(battle.mode==='ascension-delusion'||battle.mode==='ascension-road-end'){const roadEnd=battle.mode==='ascension-road-end';reward=won?(roadEnd?' 你已逼天路之主退至認可之線。':' 你沒有消滅疑心，卻已能辨認它的聲音。'):(roadEnd?' 天路沒有關；待你能再多走一步，便再來。':' 照妄未破；把今日輸掉的這一刻一起帶回來。');}
   else if(battle.mode==='mainline'){if(won){const stage=battle.mainlineStage,first=stage.id===state.mainlineCleared+1;if(first){state.mainlineCleared=stage.id;reward=` ${mainlineAftermath[stage.id-1]} 首通獎勵：${grantMainlineFirstClearRewards(stage)}。`}else reward=' 你已完整重溫此關劇情與戰鬥；重複通關不再獲得任何獎勵。持續取得素材需使用神念遠遊。'}else reward=' 可調整招式或提升任一修行道路後再次挑戰；本副本不消耗挑戰次數。'}
   else if(battle.mode==='spar'&&won){const index=sectNpcs().findIndex(n=>n.id===battle.enemy.npc?.id),intentGain=[0,6,4,2,1][index]||0;if(index>=0)npcDailyState(index).sparWon=true;state.prestige+=5;if(state.swordEmbryo&&intentGain)state.swordIntent+=intentGain;reward=` 聲望+5${state.swordEmbryo&&intentGain?`、劍意+${intentGain}`:''}；今日無法再與此人切磋。`}
@@ -2232,8 +2296,8 @@ function renderCavePanel(view='dwelling',preserveScroll=false){
   if(preserveScroll){description.scrollTop=savedScrollTop;description.scrollLeft=savedScrollLeft;if(tabBar)tabBar.scrollLeft=savedTabScroll}
 }
 function productionMaxTier(){return worldProgressTier()}
-function lootAmount(name){const count=craftingMaterialCountByName[name];return Math.max(0,Math.floor(count?state[count]||0:state.mainlineLoot?.[name]||0))}
-function spendLoot(name,amount){const count=craftingMaterialCountByName[name];if(count)state[count]=lootAmount(name)-amount;else{state.mainlineLoot=state.mainlineLoot||{};state.mainlineLoot[name]=lootAmount(name)-amount}}
+function lootAmount(name){const count=productionMaterialCountByName[name];return Math.max(0,Math.floor(count?state[count]||0:state.mainlineLoot?.[name]||0))}
+function spendLoot(name,amount){const count=productionMaterialCountByName[name];if(count)state[count]=lootAmount(name)-amount;else{state.mainlineLoot=state.mainlineLoot||{};state.mainlineLoot[name]=lootAmount(name)-amount}}
 function renderAlchemyProduction(inner){const max=productionMaxTier(),tier=Math.max(1,Math.min(max,9,state.craftingTier||1)),unlocked=tier<=max,type=pillTypes.find(x=>x[0]===state.craftingPill)||pillTypes[0],need=pillNeeds[tier-1],herb=lootAmount(type[4]),sand=lootAmount('丹砂'),can=unlocked&&herb>=need[0]&&sand>=need[1],tierText=['一','二','三','四','五','六','七','八','九'][tier-1],recipe=`<section class="craft-requirement inline-craft-requirement"><b>${type[1]}</b><span>${type[4]} ${herb}/${need[0]}</span><span>丹砂 ${sand}/${need[1]}</span>${unlocked?'':`<span class="realm-lock">境界不足：需達到可煉製${tierText}階丹藥的境界</span>`}<button id="craftPillBtn" ${can?'':'disabled'}>${unlocked?'煉製一顆':'境界不足'}</button></section>`;inner.innerHTML=`<section class="production-workshop"><button data-production-back="alchemy">返回丹爐</button><h2>丹房生產</h2><p>點選丹藥即可在旁查看材料・目前最高可煉 ${['一','二','三','四','五','六','七','八','九'][max-1]}階</p><div class="production-tier-tabs">${Array.from({length:9},(_,i)=>`<button data-craft-tier="${i+1}" class="${tier===i+1?'active':''} ${i+1>max?'tier-locked':''}">${i+1}階${i+1>max?'・未達境界':''}</button>`).join('')}</div><div class="production-choice-grid inline-recipe-grid">${pillTypes.map(([key,name])=>`<div class="production-choice-item ${type[0]===key?'selected':''}"><button data-pill-type="${key}" class="${type[0]===key?'active':''}"><img src="assets/qstyle-v2/production/pills/${key}-t${tier}.png"><b>${tierText}階${name}</b></button>${type[0]===key?recipe:''}</div>`).join('')}</div></section>`;bindProductionControls('alchemy');$$('[data-pill-type]').forEach(b=>b.onclick=()=>{state.craftingPill=b.dataset.pillType;renderAlchemyProduction(inner)});$('#craftPillBtn').onclick=()=>{if(!unlocked)return toast('目前境界尚不足以煉製此階丹藥');if(!can)return;const itemKey=`pill-${type[0]}-t${tier}`;if(!canStoreItem(itemKey,1))return toast('儲物袋容量不足');spendLoot(type[4],need[0]);spendLoot('丹砂',need[1]);state[`pillCount_${type[0]}_${tier}`]=(state[`pillCount_${type[0]}_${tier}`]||0)+1;toast(`煉成${tierText}階${type[1]}`);save();renderAlchemyProduction(inner)}}
 function rollInt(min,max){return min+Math.floor(Math.random()*(max-min+1))}
 function craftEquipment(){const tier=Math.min(productionMaxTier(),state.craftingTier||1),slot=equipmentSlots.find(x=>x[0]===state.craftingSlot)||equipmentSlots[0],quality=state.craftingQuality==='rare'?'rare':'normal',need=forgeNeeds[tier-1],mainKey=`mainlineMaterial_${slot[4]}`,tierMat=tierMaterials[tier-1];if((state[mainKey]||0)<need[0]||lootAmount(tierMat)<need[1]||(quality==='rare'&&lootAmount('器靈精魄')<need[2]))return toast('製作素材不足');if(bagUsedSlots()>=bagCapacity())return toast('儲物袋容量不足');state[mainKey]-=need[0];spendLoot(tierMat,need[1]);if(quality==='rare')spendLoot('器靈精魄',need[2]);const index=equipmentSlots.indexOf(slot),rollTable=quality==='rare'?equipmentRareRolls:equipmentNormalRolls,range=index<5?rollTable[tier-1][index]:null,e={id:`${Date.now()}-${Math.random().toString(36).slice(2,7)}`,slot:slot[0],tier,quality,label:slot[3],value:range?rollInt(range[0],range[1]):0,affixes:[]};if(index>=5){const elements=['金','木','水','火','土'].sort(()=>Math.random()-.5).slice(0,tier<=3?1:tier<=6?2:3),min=tier<=3?1:tier<=6?2:3,max=tier<=3?2:tier<=6?5:8;e.affixes=elements.map(element=>{const low=min*10,high=max*10,value=quality==='rare'?Math.max(rollInt(low,high),rollInt(low,high)):rollInt(low,high);return {element,value:value/10}})}state.equipmentInventory=state.equipmentInventory||[];state.equipmentInventory.push(e);registerEquipmentItems();toast(`製成${quality==='rare'?'極品':'凡品'}·${equipmentSets[tier-1]}${slot[1]}`);save();renderCaveView('forge')}
@@ -2397,7 +2461,7 @@ function bagItemSortProfile(key,item){
   else if(item.equipmentData){category=1;tier=item.equipmentData.tier||0;quality=item.equipmentData.quality==='rare'?1:0;slot=Math.max(0,equipmentSlots.findIndex(entry=>entry[0]===item.equipmentData.slot))}
   else if(item.techniqueBook||/Manual$/.test(key)){category=2;tier=item.techniqueBook?.tier||0}
   else if(item.pillData||item.brewData||item.dosageLimitGain||item.staminaRestore||item.moralGain||/^tribPill/.test(key)){category=3;tier=item.pillData?.tier||Number(key.match(/^tribPill(\d+)/)?.[1]||0);quality=item.dosageLimitGain?2:item.brewData?.quality==='rare'?1:0}
-  else if(key.startsWith('main-material-')||key.startsWith('craft-material-')||item.brewBase||key==='mendingSilk'){category=4}
+  else if(key.startsWith('main-material-')||key.startsWith('craft-material-')||key.startsWith('forge-tier-material-')||key==='equipmentSpiritCore'||item.brewBase||key==='mendingSilk'){category=4;tier=item.materialTier||0}
   else if(item.sectInvitation||item.identityAction){category=5;tier=item.sectInvitation?.star||0;quality=item.identityAction?1:0}
   return {category,tier,quality,slot};
 }
@@ -2556,7 +2620,7 @@ function renderHelp(tab='cultivation'){
     battle:helpCard('通用戰鬥規則',['命骨影響氣血，元息影響攻擊，玄軀影響防禦，游影影響閃避，銳識影響命中與暴擊。','戰鬥會自動進行並顯示每回合招式、傷害與閃避結果。','戰鬥進行三回合後才可中途退出；除一般切磋外，中途退出視為認輸。','不同戰鬥會使用各自的場景、敵人數值、勝利條件與獎勵。'])+helpCard('戰鬥類型',['九鎖封天：首次通關推進主線並取得固定首通獎勵；重溫不掉落，持續素材來源為神念遠遊。','試劍境：使用淬劍與本命劍相關能力擊敗劍道幻影。','肉身試煉：依煉體能力承受指定回合，重點是撐過考驗而非擊倒對手。','門人切磋：每日勝利次數有限；掌門挑戰需達指定職位與聲望。']),
     arts:helpCard('靈根與靈氣',['靈氣由修練與相關效果取得，可用來提升金、木、水、火、土五行靈根。','靈根會放大相同五行功法的效果；人物天契會提高靈氣獲取效率。','提升靈池可增加靈氣相關成長，操作前可在畫面查看所需物資。'])+helpCard('功法系統',['功法頁分為門派功法、功法書與招式；功法書再依玄錄、命篇、體典、行章、悟卷、天箋分類。','門派功法需加入門派後前往「傳功殿」學習；外門、內門、親傳依序可學一、二、三部。','門派秘藏在尚未查明前只顯示線索；晉升內門可確認，晉升親傳後才可受授。','坊市藏經閣出售功法書；購買後需到儲物袋使用，同名功法不能重複學習。','功法可消耗靈氣升級，效果會計入人物屬性與戰鬥力；遺忘不返還已投入的靈氣。']),
     cave:helpCard('靈脈與修行設施',['洞府靈脈提供設施運作所需供應，提升靈脈可擴充供應上限。','聚靈室提高掛機修為；洗劍池提高掛機劍元；鍛體室降低手動鍛體的材料消耗與受傷風險。','設施可啟停與升級；供應不足時無法啟用。鍛體室不會在在線或離線期間自動增加肉身進度。'])+helpCard('道童與資源生產',['道童可分配至食物、木材及隕鐵生產線；每條生產線每升一級可多安排一名道童。','三條生產線目前最高30級，因此單條生產線最多安排30名道童。','生產線等級與倉儲容量是煉體大境界突破條件的一部分，跨入鎮陸需三線皆達30級。'])+helpCard('煉丹、煉器與儲物袋',['丹房使用神念遠遊取得的主藥與丹砂製作永久屬性丹；可製作階級取決於三路最高境界。','器室可用織天台消耗木材、靈石製作補天絲；可在目前最高境界內自由選擇較低階織法，選擇會保留，離線期間照常推進。','儲物袋初始100格、最高19階，每次升階增加50格；每格同種道具最多容納9,999個。','器室也能使用神念遠遊素材、階材與器靈精魄製作裝備。'])+helpCard('書房',['山海志只收錄親自通過的九鎖封天地域，並記載所遇生靈與地方特產；未發現項目維持封卷。','戰錄彙整九鎖封天、試劍境、肉身試煉與因緣進度，不改變任何屬性。','典故錄只供重新翻閱已完成的主線對話與結果；因緣抉擇請由因緣入口的歲月錄查看。']),
-    sect:helpCard('加入、離開與重返',['一至九星門派會隨三路最高境界依序開放；無門無派時可隨機尋訪目前可加入的門派。','隨機尋訪會優先遇到未拜入或尚未探索完整的門派；聲望堂信物可指定加入對應門派。','脫離門派後，需等待三個修練年才能再次免費尋訪；使用指定門派信物不受此等待限制。','每個門派的職位、功勳、貢獻、任務與傳承見聞都會獨立保存，日後重返可繼續累積。'])+helpCard('門派設施',['門派主殿：查看職位與資源、晉升、領取每日俸祿及脫離門派。','門人：切磋、向掌門請安或發起掌門挑戰；大長老與供奉可引導前往門派設施。','練功房：進行每日練功及掌門傳功。','執事堂：承接持續任務；傳功殿：學習門派功法；功勳堂：使用貢獻兌換物資。','門派見聞：只記錄玩家親自拜入後得知的門派與傳承線索。'])+helpCard('功勳、貢獻與職位',['持續任務每個修練年同時增加本門功勳與門派貢獻，並發放靈石、聲望及對應正邪閱歷。','職位依累計本門功勳晉升，晉升不會扣除功勳；門派貢獻則保留給功勳堂兌換。','外門、內門、親傳、供奉、護法會影響功法、俸祿及部分門派功能。','曾在不同門派達到親傳會累積門派閱歷，使任務所得功勳與貢獻提高，最高加成50%。']),
+    sect:helpCard('加入、離開與重返',['一至九星門派會隨三路最高境界依序開放；無門無派時可隨機尋訪目前可加入的門派。','隨機尋訪會優先遇到未拜入或尚未探索完整的門派；聲望堂信物可指定加入對應門派。','脫離門派後，需等待三個修練年才能再次免費尋訪；使用指定門派信物不受此等待限制。','每個門派的職位、功勳、貢獻、任務與傳承見聞都會獨立保存，日後重返可繼續累積。'])+helpCard('門派設施',['門派主殿：查看職位與資源、晉升、領取每日俸祿及脫離門派。','門人：切磋、向掌門請安或發起掌門挑戰；大長老與供奉可引導前往門派設施。','練功房：進行每日練功及掌門傳功。','執事堂：承接持續任務；傳功殿：學習門派功法；功勳堂：使用貢獻兌換物資。','門派見聞：只記錄玩家親自拜入後得知的門派與傳承線索。'])+helpCard('持續任務與三路判定',['門派任務依練氣、淬劍、煉體三路中的最高大境界解鎖：第一至第九境每境一項，之後於第11、13、15、17、19、21、23境各開一項，共16項。','每個門檻由最先令三路最高進度達標的道路決定任務內容；其他道路日後超越並跨過新門檻時，仍會正常解鎖新任務。','已解鎖任務的道路與內容永久保留，不會因切換道場或另一條路線追上而改變。','持續任務每個修練年同時增加本門功勳與門派貢獻，並發放靈石、聲望及對應正邪閱歷。'])+helpCard('功勳、貢獻與職位',['任務基礎功勳與貢獻由每年＋10逐步成長至＋50；門派閱歷仍會提高低階任務收益，但實際每年最高各＋50。','職位依累計本門功勳晉升，晉升不會扣除功勳；門派貢獻則保留給功勳堂兌換。','功勳堂供應釀坊原釀、丹藥素材與裝備素材；一般製作素材每種每日限換10份，器靈精魄每日限換2枚。','外門、內門、親傳、供奉、護法會影響功法、俸祿及部分門派功能。']),
     wardrobe:helpCard('衣閣外觀',['髮型、服裝與真身只改變人物外觀，不會增加屬性或戰鬥力。','一般外觀可直接選用；標示「天工絕品・未擁有」的項目需使用靈玉永久購買。','天工絕品服裝每件50靈玉；天工絕品真身每款100靈玉。','服裝依男、女衣閣分別收藏；已購買的真身不受性別限制。'])+helpCard('購買與保存',['購買前會再次確認，靈玉扣除後立即加入目前角色衣閣。','衣閣收藏會隨角色存檔保存，使用帳號恢復碼移轉裝置時也會一併帶走。']),
     account:helpCard('正式版 UID 與靈玉',['每名正式版玩家都有唯一 UID，可在「選單 → 設定」查看及複製；向開發者購買靈玉時請提供此 UID。','靈玉發放完成後，遊戲在線時會自動同步入帳；同一筆發放不會重複領取。','使用易名玉牒更改姓名後，潛龍榜與飛升榜會自動更新為新姓名。'])+helpCard('帳號恢復碼',['在「選單 → 設定」建立恢復碼後，遊戲會定期將角色存檔備份至正式版帳號。','更換裝置時，在標題畫面點擊「使用帳號恢復碼」，可取回角色、原 UID、排行榜身分、衣閣收藏與待領靈玉。','恢復成功後仍沿用原恢復碼；除非永久刪除角色，否則恢復碼不會失效或變更。恢復碼等同帳號密碼，切勿交給他人。','舊裝置在線時會偵測帳號已轉移並清除本機資料；若當時離線，會在下次連網後執行。'])+helpCard('遊戲連線與存檔',['切換到其他應用程式或暫時離開瀏覽器，不會強制斷線或返回標題畫面。','尚未建立恢復碼前，角色存檔只存在目前瀏覽器；清除網站資料、移除瀏覽器或遺失裝置可能導致角色無法取回。','永久刪除角色時，已建立的雲端備份與本機恢復碼也會一併刪除。'])
   };const encounterHelp=helpCard('因緣與歲月',['修練達10、30、50、100、300、500與1000年時，會留下固定歲月事件。','正常在線遊玩約每30至60分鐘可能遇見一樁隨機奇遇；離線、戰鬥與突破演出期間不會累積隨機奇遇計時。','奇遇可暫時收起，待處理事件會保留在右側「因緣」入口。'])+helpCard('抉擇與道心',['每樁奇遇均可守正、逐利或守衡，分別累積正氣、邪氣或兩者閱歷。','獎勵只使用正式既有物品，包括物資袋、凡間素材與渡劫丹；測試道具不會出現。','守正提高氣血、防禦與減傷；逐煞提高三路攻擊但略增承傷；守衡提高命中、閃避與第二招式。']);$('#helpContent').innerHTML=(tab==='encounter'?encounterHelp:pages[tab])||pages.cultivation;
@@ -2752,7 +2816,7 @@ function closeMarket(){
 }
 
 const spiritRootCurveMigrationNeeded=(()=>{try{const stored=JSON.parse(localStorage.getItem(saveKey));return !!stored&&(stored.spiritRootCurveVersion||0)<2}catch{return false}})();
-load();normalizeSpiritRootCurve(spiritRootCurveMigrationNeeded);normalizeSectRecords();delete state.mainlineEnemySnapshots;delete state.sectNpcSnapshot;normalizeDivineRoamingTiming();if(state.divineRoamingManualCount>0)state.divineRoamingUnlocked=true;normalizeMainlineMaterialItems();normalizeCraftingMaterialItems();registerEquipmentItems();normalizeEquipmentLoadout();normalizeIndependentPaths();normalizeFirstPath();normalizeSwordPath();normalizeBodyPath();normalizeEncounterSystem();normalizeFirstPath();if(spiritRootCurveMigrationNeeded||partnerStoryMigrated)save();
+load();normalizeSpiritRootCurve(spiritRootCurveMigrationNeeded);normalizeSectRecords();delete state.mainlineEnemySnapshots;delete state.sectNpcSnapshot;normalizeDivineRoamingTiming();if(state.divineRoamingManualCount>0)state.divineRoamingUnlocked=true;normalizeMainlineMaterialItems();normalizeCraftingMaterialItems();const productionMaterialMigrated=normalizeProductionMaterialStorage();registerEquipmentItems();normalizeEquipmentLoadout();normalizeIndependentPaths();normalizeFirstPath();normalizeSwordPath();normalizeBodyPath();normalizeEncounterSystem();normalizeFirstPath();const sectTaskMigrated=normalizeSectTaskSystem();if(spiritRootCurveMigrationNeeded||partnerStoryMigrated||productionMaterialMigrated||sectTaskMigrated)save();
 normalizeQiPath();
 try{const existing=JSON.parse(localStorage.getItem(saveKey));if(state.name&&(!existing||!Object.prototype.hasOwnProperty.call(existing,'cultivationAwakened')))state.cultivationAwakened=true}catch{}
 setClockAnchor(state.lastTrustedTime||Math.min(state.lastSave||Date.now(),Date.now()),location.protocol==='file:');
