@@ -70,7 +70,8 @@ for (const path of outputFiles) {
 }
 const shell = ["index.html", "styles.css", "q-style.css", "production-fix.css", "partner-system.js", "game.js", "production-rows.js"];
 const coreNames = new Set([
-  "title-bg.png", "main-bg.png", "main-bg-sword-v1.png", "main-bg-body-v1.png",
+  "title-bg.png", "main-bg.png", "main-bg-sword-v2.png", "main-bg-body-v2.png",
+  "main-bg-sword-mobile-v2.png", "main-bg-body-mobile-v2.png",
   "female-outfit-1.png", "male-outfit-1.png", "female-outfit-2.png", "male-outfit-2.png",
   "spirit-stone.png", "spirit-jade.png", "reputation.png", "nav-root.png", "nav-cave.png",
   "nav-sect.png", "nav-arts.png", "nav-experience.png", "nav-bag.png"

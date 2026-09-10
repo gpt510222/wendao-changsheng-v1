@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260910-77';
+window.WENDAO_BUILD='20260910-78';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -654,16 +654,18 @@ function qiTribulationBonus(includeFocus=true){return (state.qiCycleMode==='stil
 function recordQiFoundationMark(){const key=state.qiCycleMode||'small';state.qiFoundationMarks[key]=(state.qiFoundationMarks[key]||0)+1}
 const cultivationPathMeta={
   spirit:{name:'練氣',realm:'聽息一層',difficulty:'入門較易',resource:'修為',description:'吐納天地元息，以門派術法與功法拓展戰術。',scene:'assets/qstyle-v2/main-bg.png'},
-  sword:{name:'淬劍',realm:'啟鋒一層',difficulty:'修途艱深',resource:'劍元',description:'養成本命劍，闖試劍境、悟劍意並凝聚道印。',scene:'assets/qstyle-v2/main-bg-sword-v1.png'},
-  body:{name:'煉體',realm:'塵軀一層',difficulty:'最為艱難',resource:'淬鍊度',description:'以體力、食物與傷勢磨煉肉身，以身為兵。',scene:'assets/qstyle-v2/main-bg-body-v1.png'}
+  sword:{name:'淬劍',realm:'啟鋒一層',difficulty:'修途艱深',resource:'劍元',description:'養成本命劍，闖試劍境、悟劍意並凝聚道印。',scene:'assets/qstyle-v2/main-bg-sword-v2.png',mobileScene:'assets/qstyle-v2/main-bg-sword-mobile-v2.png'},
+  body:{name:'煉體',realm:'塵軀一層',difficulty:'最為艱難',resource:'淬鍊度',description:'以體力、食物與傷勢磨煉肉身，以身為兵。',scene:'assets/qstyle-v2/main-bg-body-v2.png',mobileScene:'assets/qstyle-v2/main-bg-body-mobile-v2.png'}
 };
+const cultivationSceneMedia=window.matchMedia('(max-width:620px)');
+function cultivationScene(path){const meta=cultivationPathMeta[path]||cultivationPathMeta.spirit;return cultivationSceneMedia.matches&&meta.mobileScene?meta.mobileScene:meta.scene}
 function pathOpened(path){return path==='spirit'?!!state.spiritPathOpened:path==='sword'?!!state.swordPathOpened:!!state.bodyPathOpened}
 function pathRealmName(path){return path==='spirit'?realmName(state.spiritLevel,spiritRealms):path==='sword'?realmName(state.swordLevel||0,swordRealms):realmName(state.bodyLevel,bodyRealms)}
 function pathResourceLine(path){if(path==='spirit')return `修為 ${formatLargeNumber(state.free)} / ${formatLargeNumber(req(state.spiritLevel))}`;if(path==='sword')return `劍元 ${formatLargeNumber(state.swordEssence)} / ${formatLargeNumber(swordReq(state.swordLevel||0))}`;refreshBodyTrainingCharges();return `體力 ${Math.floor(state.bodyStamina)} / 100・鍛體時機 ${state.bodyTrainingCharges} / 14`}
 function primaryPathAction(){const path=state.activePath||state.firstPath||'spirit';if(path==='spirit')return openPrimarySpiritView();if(path==='sword'){if(!state.swordEmbryo)return openPrimarySwordView('sword');return upgrade('sword')}openPrimaryBodyView(bodyFoundationsReady()?'body':'training')}
 function renderPrimarySanctum(){
   if(!state.cultivationAwakened||!state.firstPath)return;
-  const path=state.activePath||state.firstPath,screen=$('#gameScreen'),scene=$('.scene-bg'),buttons={spirit:$('#spiritUp'),sword:$('#swordUp'),body:$('#bodyUp')};screen.dataset.firstPath=path;scene.src=cultivationPathMeta[path].scene;scene.alt=`${cultivationPathMeta[path].name}修練道場`;
+  const path=state.activePath||state.firstPath,screen=$('#gameScreen'),scene=$('.scene-bg'),buttons={spirit:$('#spiritUp'),sword:$('#swordUp'),body:$('#bodyUp')};screen.dataset.firstPath=path;scene.src=cultivationScene(path);scene.alt=`${cultivationPathMeta[path].name}修練道場`;
   const groups={spirit:$('#spiritPathActions'),sword:$('#swordPathActions'),body:$('#bodyPathActions')};Object.entries(groups).forEach(([key,group])=>group.classList.toggle('hidden',key!==path));
   Object.entries(buttons).forEach(([key,button])=>button.classList.toggle('primary-path-button',key===path));
   $$('.body-primary-menu').forEach(button=>button.classList.toggle('body-primary-button',path==='body'));
@@ -2806,13 +2808,13 @@ const delusionRouteAttacks={
   body:['你把活下去說成意志，卻早已習慣用傷痕證明自己。若不再疼痛，你還知道為何求長生嗎？','煉體者總說代價由自己承受，久而久之便把受苦當成正確。你真在選擇，還是只會硬撐？','你能拖著傷體走很遠，所以也最難承認方向錯了。走得到底，從來不代表那條路值得走。']
 };
 function delusionQuestionAttack(route,questionIndex,answerIndex){const answer=heartQuestions[questionIndex]?.options[answerIndex]??'我沒有留下答案',answerAttack=delusionAttacks[questionIndex]?.[answerIndex]??'連自己的回答都記不清，還談什麼問心？',routeAttack=delusionRouteAttacks[route]?.[questionIndex]??'';return `你在問心陣親口回答：「${answer}」。${answerAttack}${routeAttack?` ${routeAttack}`:''}`}
-function renderAscensionEntrances(){const a=normalizeAscension(),eligible=ascensionEligible(),realmButton=$('#realmSwitchButton'),realmImage=realmButton?.querySelector('img');$('#ascensionButton').classList.toggle('hidden',!eligible);realmButton.classList.toggle('hidden',!a.ascended);const immortal=a.currentRealm==='immortal'&&a.ascended,$scene=$('.scene-bg');$('#gameScreen').classList.toggle('immortal-realm',immortal);$$('.path-action-group').forEach(group=>group.classList.toggle('realm-hidden',immortal));if(immortal){$scene.src='assets/qstyle-v2/ascension/immortal-realm-barren-v1.png';$scene.alt='靈氣枯竭的荒蕪仙界';realmImage.src='assets/qstyle-v2/ascension/entry-mortal-v1.png';realmImage.alt='凡間';realmButton.setAttribute('aria-label','返回凡間');$('#headerSpiritRealm').title='仙界沒有靈氣；凡間修練與產能照常運作'}else{const path=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit';a.lastMortalTrainingGround=path;$scene.src=cultivationPathMeta[path]?.scene||cultivationPathMeta.spirit.scene;$scene.alt=`${cultivationPathMeta[path]?.name||'練氣'}修練道場`;realmImage.src='assets/qstyle-v2/ascension/entry-immortal-v1.png';realmImage.alt='仙界';realmButton.setAttribute('aria-label','前往仙界')}}
+function renderAscensionEntrances(){const a=normalizeAscension(),eligible=ascensionEligible(),realmButton=$('#realmSwitchButton'),realmImage=realmButton?.querySelector('img');$('#ascensionButton').classList.toggle('hidden',!eligible);realmButton.classList.toggle('hidden',!a.ascended);const immortal=a.currentRealm==='immortal'&&a.ascended,$scene=$('.scene-bg');$('#gameScreen').classList.toggle('immortal-realm',immortal);$$('.path-action-group').forEach(group=>group.classList.toggle('realm-hidden',immortal));if(immortal){$scene.src='assets/qstyle-v2/ascension/immortal-realm-barren-v1.png';$scene.alt='靈氣枯竭的荒蕪仙界';realmImage.src='assets/qstyle-v2/ascension/entry-mortal-v1.png';realmImage.alt='凡間';realmButton.setAttribute('aria-label','返回凡間');$('#headerSpiritRealm').title='仙界沒有靈氣；凡間修練與產能照常運作'}else{const path=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit';a.lastMortalTrainingGround=path;$scene.src=cultivationScene(path);$scene.alt=`${cultivationPathMeta[path]?.name||'練氣'}修練道場`;realmImage.src='assets/qstyle-v2/ascension/entry-immortal-v1.png';realmImage.alt='仙界';realmButton.setAttribute('aria-label','前往仙界')}}
 let realmSwitching=false;
 let realmSwipeStart=null;
 function realmTransitionScene(path,label){return `<section class="realm-transition-scene" style="background-image:url('${path}')" aria-label="${label}"></section>`}
 function switchWorldRealm(){
   const a=normalizeAscension();if(!a.ascended||realmSwitching)return;
-  const entering=a.currentRealm!=='immortal',path=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit',mortalScene=cultivationPathMeta[path]?.scene||cultivationPathMeta.spirit.scene,immortalScene=window.matchMedia('(max-width:620px)').matches?'assets/qstyle-v2/ascension/immortal-realm-barren-mobile-v1.png':'assets/qstyle-v2/ascension/immortal-realm-barren-v1.png',transition=document.createElement('div');
+  const entering=a.currentRealm!=='immortal',path=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit',mortalScene=cultivationScene(path),immortalScene=cultivationSceneMedia.matches?'assets/qstyle-v2/ascension/immortal-realm-barren-mobile-v1.png':'assets/qstyle-v2/ascension/immortal-realm-barren-v1.png',transition=document.createElement('div');
   realmSwitching=true;transition.className=`realm-transition realm-transition-${entering?'down':'up'}`;transition.innerHTML=realmTransitionScene(immortalScene,'仙界')+realmTransitionScene(mortalScene,'凡間');document.body.append(transition);
   window.setTimeout(()=>{a.currentRealm=entering?'immortal':'mortal';if(entering){a.lastMortalTrainingGround=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit';currentFeature=null;$('#featurePanel').classList.add('hidden');$('#gameScreen').classList.remove('feature-open');$$('.feature-tab').forEach(tab=>tab.classList.remove('active'))}save();render();resumeWorldBgm()},500);
   window.setTimeout(()=>{transition.remove();realmSwitching=false;toast(entering?'你踏入仙界。四野死寂，此地沒有一絲靈氣。':'你自荒蕪仙界降回凡間；凡間一切產能照常運轉。')},1050);
@@ -2855,6 +2857,7 @@ $('#mainlineButton').onclick=toggleMainlinePage;
 $('#ascensionButton').onclick=openAscensionRoad;
 $('#realmSwitchButton').onclick=switchWorldRealm;
 bindRealmSwipe();
+cultivationSceneMedia.addEventListener?.('change',()=>{if(state.name)render()});
 function closeGameMenu(){
   $('#gameMenu').classList.add('hidden');
   $('#menuBtn').setAttribute('aria-expanded','false');
