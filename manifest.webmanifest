@@ -1,0 +1,32 @@
+{
+  "id": "./",
+  "name": "問道長生",
+  "short_name": "問道長生",
+  "description": "踏霧尋仙，問道長生。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "browser",
+  "background_color": "#0b3f43",
+  "theme_color": "#0b3f43",
+  "icons": [
+    {
+      "src": "assets/qstyle-v2/app-icons/wendao-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/qstyle-v2/app-icons/wendao-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/qstyle-v2/app-icons/wendao-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
