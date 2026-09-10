@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260910-76';
+window.WENDAO_BUILD='20260910-77';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -1005,7 +1005,7 @@ function normalizeSpiritRootCurve(needsMigration=false){
   state.spiritRootCurveVersion=2;
 }
 function chanceFromRating(rating,cap) { return Math.min(cap,rating/(rating+1000)*100); }
-function save() { if(suppressSave)return;if(state.sect)syncCurrentSectRecord();const now=gameNow();state.lastSave=now;if(trustedClockReady)state.lastTrustedTime=Math.max(state.lastTrustedTime||0,now);localStorage.setItem(saveKey,JSON.stringify(state,(_,value)=>typeof value==='bigint'?value.toString():value));scheduleRecoveryBackup() }
+function save() { if(suppressSave)return;if(state.sect)syncCurrentSectRecord();const now=gameNow();if(sessionOnline||!state.name||!state.lastSave)state.lastSave=now;if(trustedClockReady)state.lastTrustedTime=Math.max(state.lastTrustedTime||0,now);localStorage.setItem(saveKey,JSON.stringify(state,(_,value)=>typeof value==='bigint'?value.toString():value));scheduleRecoveryBackup() }
 function grantTestTribulationPills(){
   Object.keys(tribulationPillDefaults).forEach(key=>state[key]=Math.max(200,state[key]||0));
   state.testTribulationPillGrantVersion=1;
@@ -2512,7 +2512,7 @@ function finishPause(){
   pauseStartedAt=null;document.documentElement.classList.remove('entry-transition');$$('.entry-arriving').forEach(element=>element.classList.remove('entry-arriving'));updateMainlineButton();
 }
 function forceOffline(){
-  if(suppressSave||!state.name||pauseStartedAt!==null)return;pauseStartedAt=gameNow();sessionOnline=false;clearTimeout(battleTimer);clearSwordTrialAdvance();closeOfflineRewards();battle=null;if(tribulationLocked)cleanupTribulationScene();
+  if(suppressSave||!state.name||pauseStartedAt!==null)return;pauseStartedAt=gameNow();state.lastSave=pauseStartedAt;sessionOnline=false;clearTimeout(battleTimer);clearSwordTrialAdvance();closeOfflineRewards();battle=null;if(tribulationLocked)cleanupTribulationScene();
   $('#mailboxModal').classList.add('hidden');$('#mailDetailModal').classList.add('hidden');
   $('#battleModal').classList.add('hidden');$('#tribulationModal').classList.add('hidden');$('#itemModal').classList.add('hidden');$('#sellModal').classList.add('hidden');$('#offlineModal').classList.add('hidden');$('#marketModal').classList.add('hidden');$('#marketPurchaseModal').classList.add('hidden');$('#gameMenu').classList.add('hidden');$('#settingsModal').classList.add('hidden');$('#helpModal').classList.add('hidden');stopAllBgm();show('#titleScreen');$('#titleHint').textContent='已離線・點擊螢幕重新進入';save();
 }
@@ -2806,13 +2806,13 @@ const delusionRouteAttacks={
   body:['你把活下去說成意志，卻早已習慣用傷痕證明自己。若不再疼痛，你還知道為何求長生嗎？','煉體者總說代價由自己承受，久而久之便把受苦當成正確。你真在選擇，還是只會硬撐？','你能拖著傷體走很遠，所以也最難承認方向錯了。走得到底，從來不代表那條路值得走。']
 };
 function delusionQuestionAttack(route,questionIndex,answerIndex){const answer=heartQuestions[questionIndex]?.options[answerIndex]??'我沒有留下答案',answerAttack=delusionAttacks[questionIndex]?.[answerIndex]??'連自己的回答都記不清，還談什麼問心？',routeAttack=delusionRouteAttacks[route]?.[questionIndex]??'';return `你在問心陣親口回答：「${answer}」。${answerAttack}${routeAttack?` ${routeAttack}`:''}`}
-function renderAscensionEntrances(){const a=normalizeAscension(),eligible=ascensionEligible(),realmButton=$('#realmSwitchButton'),realmImage=realmButton?.querySelector('img');$('#ascensionButton').classList.toggle('hidden',!eligible);realmButton.classList.toggle('hidden',!a.ascended);const immortal=a.currentRealm==='immortal'&&a.ascended,$scene=$('.scene-bg');$('#gameScreen').classList.toggle('immortal-realm',immortal);$$('.path-action-group').forEach(group=>group.classList.toggle('realm-hidden',immortal));if(immortal){$scene.src='assets/qstyle-v2/ascension/immortal-realm-barren-v1.png';$scene.alt='靈氣枯竭的荒蕪仙界';realmImage.src='assets/qstyle-v2/ascension/entry-mortal-v1.png';realmImage.alt='凡間';realmButton.setAttribute('aria-label','返回凡間');$('#headerSpiritRealm').title='仙界沒有靈氣；凡間修練與產能照常運作'}else{const path=a.lastMortalTrainingGround||state.activePath||state.firstPath||'spirit';$scene.src=cultivationPathMeta[path]?.scene||cultivationPathMeta.spirit.scene;$scene.alt=`${cultivationPathMeta[path]?.name||'練氣'}修練道場`;realmImage.src='assets/qstyle-v2/ascension/entry-immortal-v1.png';realmImage.alt='仙界';realmButton.setAttribute('aria-label','前往仙界')}}
+function renderAscensionEntrances(){const a=normalizeAscension(),eligible=ascensionEligible(),realmButton=$('#realmSwitchButton'),realmImage=realmButton?.querySelector('img');$('#ascensionButton').classList.toggle('hidden',!eligible);realmButton.classList.toggle('hidden',!a.ascended);const immortal=a.currentRealm==='immortal'&&a.ascended,$scene=$('.scene-bg');$('#gameScreen').classList.toggle('immortal-realm',immortal);$$('.path-action-group').forEach(group=>group.classList.toggle('realm-hidden',immortal));if(immortal){$scene.src='assets/qstyle-v2/ascension/immortal-realm-barren-v1.png';$scene.alt='靈氣枯竭的荒蕪仙界';realmImage.src='assets/qstyle-v2/ascension/entry-mortal-v1.png';realmImage.alt='凡間';realmButton.setAttribute('aria-label','返回凡間');$('#headerSpiritRealm').title='仙界沒有靈氣；凡間修練與產能照常運作'}else{const path=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit';a.lastMortalTrainingGround=path;$scene.src=cultivationPathMeta[path]?.scene||cultivationPathMeta.spirit.scene;$scene.alt=`${cultivationPathMeta[path]?.name||'練氣'}修練道場`;realmImage.src='assets/qstyle-v2/ascension/entry-immortal-v1.png';realmImage.alt='仙界';realmButton.setAttribute('aria-label','前往仙界')}}
 let realmSwitching=false;
 let realmSwipeStart=null;
 function realmTransitionScene(path,label){return `<section class="realm-transition-scene" style="background-image:url('${path}')" aria-label="${label}"></section>`}
 function switchWorldRealm(){
   const a=normalizeAscension();if(!a.ascended||realmSwitching)return;
-  const entering=a.currentRealm!=='immortal',path=a.lastMortalTrainingGround||state.activePath||state.firstPath||'spirit',mortalScene=cultivationPathMeta[path]?.scene||cultivationPathMeta.spirit.scene,immortalScene=window.matchMedia('(max-width:620px)').matches?'assets/qstyle-v2/ascension/immortal-realm-barren-mobile-v1.png':'assets/qstyle-v2/ascension/immortal-realm-barren-v1.png',transition=document.createElement('div');
+  const entering=a.currentRealm!=='immortal',path=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit',mortalScene=cultivationPathMeta[path]?.scene||cultivationPathMeta.spirit.scene,immortalScene=window.matchMedia('(max-width:620px)').matches?'assets/qstyle-v2/ascension/immortal-realm-barren-mobile-v1.png':'assets/qstyle-v2/ascension/immortal-realm-barren-v1.png',transition=document.createElement('div');
   realmSwitching=true;transition.className=`realm-transition realm-transition-${entering?'down':'up'}`;transition.innerHTML=realmTransitionScene(immortalScene,'仙界')+realmTransitionScene(mortalScene,'凡間');document.body.append(transition);
   window.setTimeout(()=>{a.currentRealm=entering?'immortal':'mortal';if(entering){a.lastMortalTrainingGround=state.activePath||state.firstPath||a.lastMortalTrainingGround||'spirit';currentFeature=null;$('#featurePanel').classList.add('hidden');$('#gameScreen').classList.remove('feature-open');$$('.feature-tab').forEach(tab=>tab.classList.remove('active'))}save();render();resumeWorldBgm()},500);
   window.setTimeout(()=>{transition.remove();realmSwitching=false;toast(entering?'你踏入仙界。四野死寂，此地沒有一絲靈氣。':'你自荒蕪仙界降回凡間；凡間一切產能照常運轉。')},1050);
@@ -2921,7 +2921,7 @@ $('#deleteVerifyBtn').onclick=()=>{
 };
 $('#deleteBackBtn').onclick=()=>showSettingsSection('#deleteStepOne');
 $('#deleteFinalBtn').onclick=async()=>{suppressSave=true;sessionOnline=false;clearTimeout(battleTimer);clearSwordTrialAdvance();clearTimeout(recoveryBackupTimer);battle=null;stopAllBgm();if(storedRecoveryCode())try{await recoveryRpc('delete_recovery_backup',{})}catch{}localStorage.removeItem(accountRecoveryConfig.codeKey);localStorage.removeItem(saveKey);state={...defaults,name:'',bornAt:null,lastSave:gameNow()};location.reload()};
-$('#backToTitle').onclick=()=>{save();$('#gameMenu').classList.add('hidden');$('#settingsModal').classList.add('hidden');$('#helpModal').classList.add('hidden');$('#marketModal').classList.add('hidden');$('#marketPurchaseModal').classList.add('hidden');$('#titleHint').textContent='點擊螢幕繼續修煉';show('#titleScreen');startBgm('title')};
+$('#backToTitle').onclick=forceOffline;
 $('#backToTitle').addEventListener('click',()=>{$('#mailboxModal').classList.add('hidden');$('#mailDetailModal').classList.add('hidden');currentMailId=null});
 $('#muteBtn').onclick=()=>{state.muted=!state.muted;updateBgmVolume();render();save()};
 $('#battleExitBtn').onclick=forceEndBattle;
