@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260911-81';
+window.WENDAO_BUILD='20260911-82';
 const qStyleMode=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
@@ -975,7 +975,8 @@ function syncLeaderboardAfterRename(){
 }
 function escapeLeaderboardText(value){const node=document.createElement('span');node.textContent=String(value??'');return node.innerHTML}
 function leaderboardHighestRealm(record){const paths=[{label:'修氣',level:Number(record.spirit_level)||0,realms:spiritRealms},{label:'淬劍',level:Number(record.sword_level)||0,realms:swordRealms},{label:'煉體',level:Number(record.body_level)||0,realms:bodyRealms}];const highest=paths.reduce((best,path)=>path.level>best.level?path:best,paths[0]);return `${highest.label}・${realmName(highest.level,highest.realms)}`}
-async function fetchCombatLeaderboard(){const query=`game_version=like.${encodeURIComponent(`${leaderboardConfig.gameVersion}*`)}&select=player_name,combat_power,spirit_level,sword_level,body_level,updated_at&order=combat_power.desc,updated_at.asc&limit=${leaderboardConfig.limit}`;const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_rankings?${query}`,{headers:leaderboardHeaders()});if(!response.ok)throw new Error('ranking fetch failed');return response.json()}
+function dedupeCombatLeaderboard(records){const unique=new Map();for(const record of records){const name=String(record.player_name||'無名修士').trim()||'無名修士',key=name.normalize('NFKC');if(!unique.has(key))unique.set(key,{...record,player_name:name})}return [...unique.values()].slice(0,leaderboardConfig.limit)}
+async function fetchCombatLeaderboard(){const query=`game_version=like.${encodeURIComponent(`${leaderboardConfig.gameVersion}*`)}&select=player_name,combat_power,spirit_level,sword_level,body_level,updated_at&order=combat_power.desc,updated_at.desc&limit=500`;const response=await fetch(`${leaderboardConfig.url}/rest/v1/player_rankings?${query}`,{headers:leaderboardHeaders()});if(!response.ok)throw new Error('ranking fetch failed');return dedupeCombatLeaderboard(await response.json())}
 async function fetchAscensionLeaderboard(){const query=`game_version=like.${encodeURIComponent(`${leaderboardConfig.gameVersion}*`)}&select=user_id,player_name,spirit_level,sword_level,body_level,game_version&limit=1000`,response=await fetch(`${leaderboardConfig.url}/rest/v1/player_rankings?${query}`,{headers:leaderboardHeaders()});if(!response.ok)throw new Error('ascension ranking fetch failed');return (await response.json()).map(parseAscensionLeaderboardRecord).filter(Boolean).sort((a,b)=>a.ascendedAt-b.ascendedAt).slice(0,leaderboardConfig.limit)}
 async function refreshOwnAscensionRank(){const a=normalizeAscension(),session=readLeaderboardSession();if(!a.ascended||!session?.user?.id)return;try{const records=await fetchAscensionLeaderboard(),index=records.findIndex(record=>record.user_id===session.user.id);if(index>=0&&a.serverAscensionRank!==index+1){a.serverAscensionRank=index+1;save();const label=document.querySelector('.sheet-ascension-rank b');if(label)label.textContent=`第 ${index+1} 名`}}catch{}}
 const ascensionRouteLabels={qi:'練氣飛升',sword:'淬劍飛升',body:'煉體飛升'};
