@@ -503,7 +503,7 @@
 .q-style .mainline-entry-button,
 .q-style .encounter-button{
   position:absolute;z-index:9;width:92px;height:92px;margin:0;padding:0;border:0!important;border-radius:0;
-  background:none!important;box-shadow:none!important;filter:drop-shadow(0 7px 8px #1c515766);
+  -webkit-appearance:none;appearance:none;outline:0!important;background:none!important;box-shadow:none!important;filter:drop-shadow(0 7px 8px #1c515766);
   cursor:pointer;transition:transform .18s ease,filter .18s ease
 }
 .q-style .market-button,.q-style .mail-button{right:3.5%}
@@ -766,4 +766,18 @@
   .q-style .cave-facility strong{font-size:10px}
   .q-style .facility-actions{grid-column:3;grid-row:1;gap:7px}
   .q-style .facility-actions button{min-height:36px;padding:7px 6px;font-size:10px}
+}
+
+/* iOS Safari may retain native button frames on transparent image/hotspot controls. */
+.q-style .hero-character-hotspot,
+.q-style .market-button,
+.q-style .mail-button,
+.q-style .mainline-entry-button,
+.q-style .encounter-button,
+.q-style .artifact-tomb-button,
+.q-style .ascension-entry-button,
+.q-style .realm-switch-button{
+  -webkit-appearance:none!important;appearance:none!important;
+  border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;
+  -webkit-tap-highlight-color:transparent
 }
