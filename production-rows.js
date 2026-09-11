@@ -4,7 +4,7 @@ renderAlchemyProduction=function(inner){
   const tierText=['一','二','三','四','五','六','七','八','九'][tier-1],need=pillNeeds[tier-1];
   const rows=pillTypes.map(([key,name,,label,herbName])=>{
     const herb=lootAmount(herbName),sand=lootAmount('丹砂'),can=unlocked&&herb>=need[0]&&sand>=need[1];
-    return `<article class="production-row"><div class="production-row-item"><img src="assets/qstyle-v2/production/pills/${key}-t${tier}.png" alt=""><b>${tierText}階${name}</b></div><div class="production-row-action"><span class="craft-effect-preview">丹效：服用後永久 ${label} +1</span><span>${herbName} ${herb}/${need[0]}</span><span>丹砂 ${sand}/${need[1]}</span><button data-craft-pill="${key}" ${can?'':'disabled'}>${unlocked?'煉製一顆':'境界不足'}</button></div></article>`;
+    return `<article class="production-row"><div class="production-row-item"><img src="assets/qstyle-v2/production/pills/${key}-t${tier}.png" alt=""><b>${tierText}階${name}</b></div><div class="production-row-action"><span class="craft-effect-preview">丹效：服用後永久 ${label} +${pillTierGain(tier)}</span><span>${herbName} ${herb}/${need[0]}</span><span>丹砂 ${sand}/${need[1]}</span><button data-craft-pill="${key}" ${can?'':'disabled'}>${unlocked?'煉製一顆':'境界不足'}</button></div></article>`;
   }).join('');
   inner.innerHTML=`<section class="production-workshop production-row-workshop"><div class="production-tier-tabs">${Array.from({length:9},(_,i)=>`<button data-craft-tier="${i+1}" class="${tier===i+1?'active':''} ${i+1>max?'tier-locked':''}">${i+1}階${i+1>max?'・未達境界':''}</button>`).join('')}</div><div class="production-row-list">${rows}</div></section>`;
   bindProductionControls('alchemy');
