@@ -754,3 +754,34 @@
 @media(max-width:620px){.q-style .game-screen.immortal-realm .realm-switch-button{left:2%;right:auto;top:20%}}
 @media(max-width:620px){.q-style .game-screen.immortal-realm .scene-bg{content:url('assets/qstyle-v2/ascension/immortal-realm-barren-mobile-v1.png');object-position:center center}}
 @media(prefers-reduced-motion:reduce){.realm-transition-up,.realm-transition-down{animation-duration:.01ms}.realm-transition::after{display:none}}
+
+/* Wide desktop layout: use the available canvas instead of retaining phone-scale copy. */
+@media (min-width:1200px) and (min-height:720px){
+  .q-style .topbar,.q-style .efficiency,.q-style .bottom-nav,.q-style .feature-panel{width:min(1080px,calc(100vw - 280px))}
+  .q-style .topbar{height:78px;padding-inline:24px}
+  .q-style .efficiency{top:102px;height:76px;padding-inline:24px}
+  .q-style .feature-panel{top:190px;bottom:96px;padding:30px 38px}
+  .q-style .bottom-nav{height:92px}
+  .q-style .bottom-nav .nav-icon{width:50px;height:50px}
+  .q-style .bottom-nav small{font-size:12px}
+  .q-style .topbar strong{font-size:22px}
+  .q-style .topbar small,.q-style .header-wallet em{font-size:12px}
+  .q-style .header-wallet b{font-size:13px}
+  .q-style .efficiency small{font-size:12px}
+  .q-style .efficiency b{font-size:21px}
+  .q-style .feature-panel>#featureDescription{padding:5px 14px 48px 5px}
+  .q-style .feature-panel #featureDescription :is(p,small,span,em){font-size:12px;line-height:1.55}
+  .q-style .feature-panel #featureDescription :is(button,input,textarea,select){font-size:13px}
+  .q-style .feature-panel #featureDescription :is(b,strong){font-size:15px}
+  .q-style .feature-panel #featureDescription h2{font-size:27px}
+  .q-style .feature-panel #featureDescription h3{font-size:20px}
+  .q-style .arts-main-tabs button,.q-style .bag-tabs button,.q-style .root-tabs button,.q-style .sect-tabs button,.q-style .experience-tabs button{min-height:52px;font-size:14px}
+  .q-style .cave-core{padding:19px 22px}
+  .q-style .cave-core b{font-size:29px}
+  .q-style .cave-facility-grid{gap:14px}
+  .q-style .cave-facility{grid-template-columns:58px 1fr;gap:11px;padding:16px 14px}
+  .q-style .facility-seal{width:52px;height:52px;font-size:26px}
+  .q-style .cave-facility p{min-height:54px}
+  .q-style .facility-actions{gap:7px}
+  .q-style .facility-actions button{min-height:38px}
+}
