@@ -169,7 +169,7 @@ begin
  if p_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
  update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(actual_won)::int,losses=losses+((not p_won))::int,
  reached_at=case when delta>0 then now() else reached_at end,updated_at=now() where user_id=m.challenger_id;
- update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not p_won))::int,losses=losses+(actual_won)::int,
+ update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not p_won))::int,losses=losses+(p_won)::int,
  reached_at=case when delta<0 then now() else reached_at end,updated_at=now() where user_id=m.defender_id;
  update public.arena_matches set status='finished',winner_id=case when p_won then challenger_id else defender_id end,
  challenger_delta=delta,defender_delta=-delta,finished_at=now() where id=p_match;
