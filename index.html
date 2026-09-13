@@ -9,8 +9,8 @@
   <link rel="manifest" href="manifest.webmanifest?v=20260911-1">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/qstyle-v2/app-icons/wendao-icon-180.png?v=20260911-1">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/qstyle-v2/app-icons/wendao-icon-32.png?v=20260911-1">
-  <link rel="stylesheet" href="styles.css?v=20260910-32">
-  <link rel="stylesheet" href="q-style.css?v=20260912-22">
+  <link rel="stylesheet" href="styles.css?v=20260913-33">
+  <link rel="stylesheet" href="q-style.css?v=20260913-23">
   <link rel="stylesheet" href="production-fix.css?v=20260911-05">
   <script>document.documentElement.classList.add('q-style');</script>
 </head>
@@ -168,6 +168,14 @@
         </div>
       </header>
 
+      <section id="immortalStatusBar" class="immortal-status-bar hidden" aria-label="仙界進程">
+        <span><small>界應</small><b id="immortalStatusAdaptation">0</b></span>
+        <i></i>
+        <span><small>界軀</small><b id="immortalStatusBody">零階</b></span>
+        <i></i>
+        <span><small>復界</small><b id="immortalStatusRestoration">古臺 0%</b></span>
+      </section>
+
       <section class="efficiency paper-panel">
         <div><small>當前修為</small><b id="totalQi">0</b></div>
         <i></i>
@@ -254,13 +262,20 @@
         <small id="featureReturnHint">再次點擊目前頁籤即可回到修練畫面</small>
       </section>
 
-      <footer class="bottom-nav paper-panel">
+      <footer class="bottom-nav mortal-bottom-nav paper-panel">
         <button class="feature-tab" data-page="root" data-title="靈根"><img class="nav-icon" src="assets/qstyle-v2/nav-spirit-root.png" alt=""><small>靈根</small></button>
         <button class="feature-tab" data-page="cave" data-title="洞府"><img class="nav-icon" src="assets/qstyle-v2/nav-cave.png" alt=""><small>洞府</small></button>
         <button class="feature-tab" data-page="sect" data-title="門派"><img class="nav-icon" src="assets/qstyle-v2/nav-sect.png" alt=""><small>門派</small></button>
         <button class="feature-tab" data-page="arts" data-title="功法"><img class="nav-icon" src="assets/qstyle-v2/nav-arts-cutout.png" alt=""><small>功法</small></button>
         <button class="feature-tab" data-page="experience" data-title="兼修"><img class="nav-icon" src="assets/qstyle-v2/nav-experience.png" alt=""><small>兼修</small></button>
         <button class="feature-tab" data-page="bag" data-title="儲物袋"><img class="nav-icon" src="assets/qstyle-v2/nav-bag-cutout.png" alt=""><small>儲物袋</small></button>
+      </footer>
+      <footer class="bottom-nav immortal-bottom-nav" aria-label="仙界功能">
+        <button class="feature-tab immortal-feature-tab" data-page="immortal-domain" data-title="仙域"><img class="nav-icon" src="assets/qstyle-v2/immortal/nav-domain-v1.png" alt=""><small>仙域</small></button>
+        <button class="feature-tab immortal-feature-tab" data-page="immortal-expedition" data-title="遠征"><img class="nav-icon" src="assets/qstyle-v2/immortal/nav-expedition-v1.png" alt=""><small>遠征</small></button>
+        <button class="feature-tab immortal-feature-tab" data-page="immortal-path" data-title="仙途"><img class="nav-icon" src="assets/qstyle-v2/immortal/nav-path-v1.png" alt=""><small>仙途</small></button>
+        <button class="feature-tab immortal-feature-tab" data-page="immortal-restoration" data-title="復界"><img class="nav-icon" src="assets/qstyle-v2/immortal/nav-restoration-v1.png" alt=""><small>復界</small></button>
+        <button class="feature-tab immortal-feature-tab" data-page="bag" data-title="儲物袋"><img class="nav-icon" src="assets/qstyle-v2/nav-bag-cutout.png" alt=""><small>儲物袋</small></button>
       </footer>
 
       <div id="toast" class="toast"></div>
@@ -567,8 +582,9 @@
   <audio id="tribulationFailureBgm" src="assets/bgm-tribulation-failure-v1.wav" preload="auto"></audio>
   <audio id="swordBreakthroughBgm" src="assets/bgm-sword-breakthrough-user-v1.wav" preload="auto"></audio>
   <script src="partner-system.js?v=20260911-6"></script>
-  <script src="game.js?v=20260911-84"></script>
+  <script src="game.js?v=20260913-85"></script>
+  <script src="immortal-potential-system.js?v=20260913-1"></script>
   <script src="production-rows.js?v=20260911-05"></script>
-  <script>window.addEventListener('load',()=>{if(window.WENDAO_BUILD==='20260911-84')return;const key='wendao-build-refresh-20260911-84';if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');let refreshed=false;const refresh=()=>{if(refreshed)return;refreshed=true;location.reload()};navigator.serviceWorker?.addEventListener('controllerchange',refresh,{once:true});navigator.serviceWorker?.getRegistration().then(registration=>registration?.update()).catch(()=>{});setTimeout(refresh,1800)});</script>
+  <script>window.addEventListener('load',()=>{if(window.WENDAO_BUILD==='20260913-85')return;const key='wendao-build-refresh-20260913-85';if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');let refreshed=false;const refresh=()=>{if(refreshed)return;refreshed=true;location.reload()};navigator.serviceWorker?.addEventListener('controllerchange',refresh,{once:true});navigator.serviceWorker?.getRegistration().then(registration=>registration?.update()).catch(()=>{});setTimeout(refresh,1800)});</script>
 </body>
 </html>
