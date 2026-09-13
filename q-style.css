@@ -764,6 +764,28 @@
 html.q-style #gameScreen.game-screen.immortal-realm #spiritPathActions.path-action-group.realm-hidden,
 html.q-style #gameScreen.game-screen.immortal-realm #swordPathActions.path-action-group.realm-hidden,
 html.q-style #gameScreen.game-screen.immortal-realm #bodyPathActions.path-action-group.realm-hidden{display:none!important}
+html.q-style #gameScreen.game-screen.immortal-realm.feature-open .feature-panel:not(.hidden){display:block!important}
+
+/* Immortal realm chrome: ash stone, dim jade and weathered bronze. */
+.q-style .immortal-status-bar{position:absolute;z-index:6;top:74px;left:2%;right:2%;height:62px;display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;align-items:stretch;gap:8px;padding:8px 12px;border:2px solid #75664f;border-radius:15px 15px 19px 19px;background:radial-gradient(circle at 12px 12px,#b49b61 0 2px,transparent 3px),radial-gradient(circle at calc(100% - 12px) 12px,#b49b61 0 2px,transparent 3px),linear-gradient(180deg,#313a37f5,#1d2726f5);box-shadow:inset 0 0 0 2px #a58a58,inset 0 0 0 5px #202b29,0 5px 0 #10181799,0 10px 22px #07100fb3;color:#d8d0bc}
+.q-style .immortal-status-bar.hidden{display:none!important}
+.q-style .immortal-status-bar span{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.q-style .immortal-status-bar small{font-size:9px;letter-spacing:.16em;color:#aaa38f}
+.q-style .immortal-status-bar b{margin-top:2px;font-family:serif;font-size:15px;font-weight:600;color:#d3bc7a;text-shadow:0 1px 3px #000}
+.q-style .immortal-status-bar>i{align-self:center;height:30px;background:linear-gradient(transparent,#8d7955 20% 80%,transparent)}
+.q-style .game-screen.immortal-realm .immortal-bottom-nav{border:2px solid #75664f;border-bottom:0;background:radial-gradient(ellipse at 50% 0,#48524b 0,transparent 58%),linear-gradient(180deg,#2d3733f7,#17211ff7);box-shadow:inset 0 3px 0 #a68b56,inset 0 6px 0 #202b28,0 -8px 24px #08100fc7}
+.q-style .game-screen.immortal-realm .immortal-bottom-nav::before{background:linear-gradient(90deg,transparent,#a98c56 22% 78%,transparent);opacity:.68}
+.q-style .game-screen.immortal-realm .immortal-bottom-nav .feature-tab{color:#b8b4a5;text-shadow:0 1px 2px #000}
+.q-style .game-screen.immortal-realm .immortal-bottom-nav .feature-tab.active{color:#ead8a0;background:radial-gradient(ellipse at 50% 100%,#766d4994,transparent 72%),linear-gradient(180deg,#48574e,#25332f);box-shadow:inset 0 0 0 1px #aa8e58,0 -3px 10px #050b0a99}
+.q-style .game-screen.immortal-realm .immortal-bottom-nav .nav-icon{opacity:.88;filter:saturate(.72) sepia(.18) brightness(.82) drop-shadow(0 2px 3px #000)}
+.q-style .game-screen.immortal-realm .immortal-bottom-nav .feature-tab.active .nav-icon{opacity:1;filter:saturate(.95) sepia(.12) brightness(1.05) drop-shadow(0 2px 5px #b8955570)}
+.q-style .immortal-bottom-nav .feature-tab:nth-child(1) img{content:url("assets/qstyle-v2/immortal/nav-domain-v1.png")}
+.q-style .immortal-bottom-nav .feature-tab:nth-child(2) img{content:url("assets/qstyle-v2/immortal/nav-expedition-v1.png")}
+.q-style .immortal-bottom-nav .feature-tab:nth-child(3) img{content:url("assets/qstyle-v2/immortal/nav-path-v1.png")}
+.q-style .immortal-bottom-nav .feature-tab:nth-child(4) img{content:url("assets/qstyle-v2/immortal/nav-restoration-v1.png")}
+.q-style .immortal-bottom-nav .feature-tab:nth-child(5) img{content:url("assets/qstyle-v2/nav-bag-cutout.png")}
+@media(min-width:900px){.q-style .immortal-status-bar{left:50%;right:auto;top:86px;width:640px;transform:translateX(-50%)}}
+@media(max-width:540px){.q-style .immortal-status-bar{border-width:2px;padding-inline:9px}.q-style .immortal-status-bar small{font-size:8px}.q-style .immortal-status-bar b{font-size:13px}}
 
 /* Desktop cave facilities: three full-width horizontal cards without scaling the game shell. */
 @media (min-width:900px){
