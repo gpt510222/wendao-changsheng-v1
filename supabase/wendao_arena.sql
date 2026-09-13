@@ -112,7 +112,7 @@ declare uid uuid:=(select auth.uid()); my_score int:=1000;
 begin
  perform private.arena_rollover(p_channel);
  perform private.arena_seed_ranked_profiles(p_channel);
- select score into my_score from public.arena_profiles where arena_profiles.user_id=uid and channel=$1;
+ select p.score into my_score from public.arena_profiles p where p.user_id=uid and p.channel=$1;
  return query select p.user_id,p.player_name,p.score,p.snapshot from public.arena_profiles p
  where p.channel=$1 and p.user_id<>uid and coalesce((p.snapshot->>'eligible')::boolean,false)=true
  order by abs(p.score-coalesce(my_score,1000)),random() limit 30;
