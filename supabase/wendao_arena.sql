@@ -113,9 +113,8 @@ begin
  perform private.arena_rollover(p_channel);
  perform private.arena_seed_ranked_profiles(p_channel);
  select p.score into my_score from public.arena_profiles p where p.user_id=uid and p.channel=$1;
- return query select p.user_id,p.player_name,p.score,p.snapshot from public.arena_profiles p
- where p.channel=$1 and p.user_id<>uid and coalesce((p.snapshot->>'eligible')::boolean,false)=true
- order by abs(p.score-coalesce(my_score,1000)),random() limit 30;
+ return query select q.user_id,q.player_name,q.score,q.snapshot from (select distinct on (lower(trim(p.player_name))) p.user_id,p.player_name,p.score,p.snapshot from public.arena_profiles p where p.channel=$1 and p.user_id<>uid and coalesce((p.snapshot->>'eligible')::boolean,false)=true order by lower(trim(p.player_name)),p.score desc,p.updated_at desc) q
+ order by abs(q.score-coalesce(my_score,1000)),random() limit 30;
 end $$;
 
 create or replace function public.arena_buy_attempt(p_kind text)
