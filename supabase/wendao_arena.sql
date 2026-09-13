@@ -77,6 +77,8 @@ begin
  select r.user_id,p_channel,r.player_name,
    jsonb_build_object(
     'eligible',true,
+    'highest_path',case when coalesce(r.body_level,0)/4.0>=greatest(coalesce(r.spirit_level,0)/10.0,coalesce(r.sword_level,0)/10.0) then 'body' when coalesce(r.sword_level,0)>=coalesce(r.spirit_level,0) then 'sword' else 'spirit' end,
+    'highest_level',case when coalesce(r.body_level,0)/4.0>=greatest(coalesce(r.spirit_level,0)/10.0,coalesce(r.sword_level,0)/10.0) then coalesce(r.body_level,0) when coalesce(r.sword_level,0)>=coalesce(r.spirit_level,0) then coalesce(r.sword_level,0) else coalesce(r.spirit_level,0) end,
     'highest_realm',case
       when coalesce(r.body_level,0)/4.0>=greatest(coalesce(r.spirit_level,0)/10.0,coalesce(r.sword_level,0)/10.0) then '煉體・第'||(floor(coalesce(r.body_level,0)/4)+1)::int||'境'||(mod(coalesce(r.body_level,0),4)+1)::int||'階'
       when coalesce(r.sword_level,0)>=coalesce(r.spirit_level,0) then '淬劍・第'||(floor(coalesce(r.sword_level,0)/10)+1)::int||'境'||(mod(coalesce(r.sword_level,0),10)+1)::int||'階'
@@ -88,7 +90,7 @@ begin
  from public.player_rankings r
  where (coalesce(r.spirit_level,0)>=40 or coalesce(r.sword_level,0)>=40 or coalesce(r.body_level,0)>=16)
    and (case when p_channel='formal' then r.game_version like 'v1.0.0%' else r.game_version like '20260902-49%' end)
- on conflict(user_id) do nothing;
+ on conflict(user_id) do update set player_name=excluded.player_name,snapshot=excluded.snapshot where public.arena_profiles.snapshot->>'rank_seeded'='true';
 end $$;
 
 create or replace function public.arena_sync_profile(p_channel text,p_name text,p_snapshot jsonb)
