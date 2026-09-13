@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260913-93';
+window.WENDAO_BUILD='20260913-95';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -481,6 +481,7 @@ defaults.ownedMasterworkOutfits=[];
 defaults.ownedMasterworkTrueForms=[];
 defaults.sectTechniqueMailVersion=0;
 defaults.updateCompensationMailVersion=1;
+defaults.secondUpdateCompensationMailVersion=1;
 defaults.sectRecords={};
 defaults.sectMerit=0;
 defaults.sectSearchAvailableAt=0;
@@ -1081,6 +1082,7 @@ function load() {
   try {
     const current=JSON.parse(localStorage.getItem(saveKey));
     if(current&&!Object.prototype.hasOwnProperty.call(current,'updateCompensationMailVersion'))current.updateCompensationMailVersion=0;
+    if(current&&!Object.prototype.hasOwnProperty.call(current,'secondUpdateCompensationMailVersion'))current.secondUpdateCompensationMailVersion=0;
     if(current) { const growthVersion=current.attributeGrowthVersion||0,needsPillMigration=!current.tribulationPillMigration,needsTestJadeGrant=!current.testJadeGrantVersion,needsTestPillGrant=!current.testTribulationPillGrantVersion;state={...defaults,...current};if(needsTestJadeGrant){state.spiritJade=Math.max(99999,state.spiritJade||0);state.testJadeGrantVersion=1}if(needsPillMigration)state.tribPill1=(state.tribPill1||0)+Math.max(0,current.pills||0);delete state.pills;delete state.sectTokens;delete state.sectTokenDaily;state.tribulationPillMigration=1;if(needsTestPillGrant)grantTestTribulationPills();state.learnedArts=Array.isArray(current.learnedArts)?current.learnedArts:[];state.learnedBookIds=Array.isArray(current.learnedBookIds)?current.learnedBookIds:[];state.mailbox=Array.isArray(current.mailbox)?current.mailbox:[];state.scripturePurchases={...defaults.scripturePurchases,...current.scripturePurchases};state.scripturePurchases.ids=Array.isArray(state.scripturePurchases.ids)?state.scripturePurchases.ids:[];state.marketPermanentPurchases=current.marketPermanentPurchases&&typeof current.marketPermanentPurchases==='object'?current.marketPermanentPurchases:{};state.marketDailyPurchases={...defaults.marketDailyPurchases,...current.marketDailyPurchases};state.marketDailyPurchases.counts=state.marketDailyPurchases.counts&&typeof state.marketDailyPurchases.counts==='object'?state.marketDailyPurchases.counts:{};state.practiceBuff={...defaults.practiceBuff,...current.practiceBuff};state.transmissionBuff={...defaults.transmissionBuff,...current.transmissionBuff};migrateAttributeGrowth(growthVersion);state.bornAt ||= Date.now();delete state.npcAffinity;state.npcDaily=normalizeNpcDailyLog(state.npcDaily);normalizeLearnedArts();normalizeCaveWorkers();normalizeCaveState();migrateSectName(); return state; }
   } catch {}
 }
@@ -1164,7 +1166,10 @@ function ensureTestSwordEssenceMail(){if(!state.name||state.testSwordEssenceMail
 function createSectTechniqueRevisionMail(now){return {id:'sect-technique-revision-v2',subject:'門派功法改修致歉與舊傳承操作說明',sender:'問道長生・開發團隊',body:'道友安好：\n\n本次更新重新整理了所有門派的傳功內容，造成查閱與養成規劃上的不便，我們在此致歉。悟卷與天箋現已改為真正稀有的門派傳承：每個星級僅有一個正派與一個邪派門派持有稀有功法，其中一部為悟卷、另一部為天箋；奇偶星級會交換正邪所持類型。全九星合計只有九部悟卷與九部天箋，且仍需晉升供奉才能學習。\n\n【已學功法如何處理】\n更新不會刪除、降級或改寫你已學會的功法。內容與新版不同者會標示為「舊傳承」，原名稱、五行、類型、等級與效果均會繼續保留。\n\n【免費轉換新版】\n前往「功法 → 門派功法」，在舊傳承功法上點選「免費轉換」。轉換會保留原本的星階與功法等級，但名稱、五行、功法類型及加成屬性會改成該門派目前對應欄位的新版內容。確認視窗會先列出轉換前後資料；不想轉換可以直接取消，舊功法沒有期限。\n\n【遺忘與重新學習】\n舊傳承一旦遺忘便無法復原，也不會返還已投入的靈氣。若保留舊傳承，該門派同一欄位視為已學，不能再額外取得新版；需先使用免費轉換，或自行遺忘後再依門派職位重新學習。尚未學過的門派功法會直接依新版內容顯示。\n\n【離開原門派】\n即使已離開原門派，舊傳承仍會保留，也可在門派功法頁免費轉換；不必為了處理舊功法重新拜入原門派。\n\n感謝道友在測試期間陪伴我們調整修行體系。',sentAt:now,read:false,claimed:true,attachments:[]}}
 function ensureSectTechniqueRevisionMail(){if(!state.name)return;let existing=mailbox().find(mail=>mail.id==='sect-technique-revision-v2');if(state.sectTechniqueMailVersion<2&&!existing){existing=createSectTechniqueRevisionMail(gameNow());mailbox().unshift(existing)}if(existing)existing.body=existing.body.replace('且仍需晉升供奉才能學習','且需晉升親傳弟子才能學習');state.sectTechniqueMailVersion=Math.max(2,state.sectTechniqueMailVersion||0)}
 function createUpdateCompensationMail(now){return {id:'update-compensation-20260913-v1',subject:'版本更新補償與致歉',sender:'問道長生・開發團隊',body:'道友安好：\n\n近期版本同步與介面調整造成顯示及操作異常，影響了各位道友的修行體驗，我們在此誠摯致歉。感謝你的耐心回報與陪伴，隨信奉上一份更新補償，願往後仙途順遂。',sentAt:now,read:false,claimed:false,attachments:[{type:'item',key:'reputationspiritStone10000Count',name:'一萬靈石',image:itemCatalog.reputationspiritStone10000.image,amount:5},...pillTypes.map(([key,name])=>({type:'item',key:`pillCount_${key}_1`,name:`一階${name}`,image:itemCatalog[`pill-${key}-t1`].image,amount:20}))]}}
-function ensureUpdateCompensationMail(){if(!state.name||state.updateCompensationMailVersion>=1)return;if(!mailbox().some(mail=>mail.id==='update-compensation-20260913-v1'))mailbox().unshift(createUpdateCompensationMail(gameNow()));state.updateCompensationMailVersion=1}
+function ensureUpdateCompensationMail(){if(!state.name||state.updateCompensationMailVersion>=2)return;if(!mailbox().some(mail=>mail.id==='update-compensation-20260913-v1'))mailbox().unshift(createUpdateCompensationMail(gameNow()));state.updateCompensationMailVersion=2}
+function createSecondUpdateCompensationMail(now){const mail=createUpdateCompensationMail(now);return {...mail,id:'update-compensation-20260913-v2',subject:'更新補償再次發放',body:'道友安好：\n\n因前次補償信發放異常，部分道友未能正確收到附件，我們再次向各位致歉。本次重新發放同額補償；領取後，一萬靈石將以五個「一萬靈石」儲物袋道具存入包包，四種一階丹藥亦會各存入二十顆。'}}
+function ensureSecondUpdateCompensationMail(){if(!state.name||state.secondUpdateCompensationMailVersion>=1)return;if(!mailbox().some(mail=>mail.id==='update-compensation-20260913-v2'))mailbox().unshift(createSecondUpdateCompensationMail(gameNow()+1));state.secondUpdateCompensationMailVersion=1}
+function repairClaimedUpdateCompensation(){const mail=mailbox().find(entry=>entry.id==='update-compensation-20260913-v1');if(mail?.claimed&&!Object.prototype.hasOwnProperty.call(state,'reputationspiritStone10000Count'))state.reputationspiritStone10000Count=5}
 function mailbox(){return Array.isArray(state.mailbox)?state.mailbox:(state.mailbox=[])}
 function unreadMailCount(){return mailbox().filter(mail=>!mail.read).length}
 function mailDate(value){return new Intl.DateTimeFormat('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(value||Date.now()))}
@@ -1193,7 +1198,7 @@ function claimMailAttachments(){
   const mail=mailbox().find(entry=>entry.id===currentMailId);if(!mail||mail.claimed)return;
   const itemAttachments=(mail.attachments||[]).filter(attachment=>attachment.type==='item').map(attachment=>[attachment.key,Number(attachment.amount)||0]);
   if(!canStoreBagCounts(itemAttachments))return toast('儲物袋容量不足，請先騰出空間');
-  for(const attachment of mail.attachments||[]){if(attachment.type==='currency'&&Object.prototype.hasOwnProperty.call(state,attachment.key)){if(['free','swordEssence'].includes(attachment.key))state[attachment.key]=toBigInt(state[attachment.key])+toBigInt(attachment.amount);else state[attachment.key]=(Number(state[attachment.key])||0)+Number(attachment.amount||0)}else if(attachment.type==='item'&&Object.prototype.hasOwnProperty.call(state,attachment.key))state[attachment.key]=(Number(state[attachment.key])||0)+Number(attachment.amount||0)}
+  const validItemCounts=new Set(Object.values(itemCatalog).map(item=>item.count).filter(Boolean));for(const attachment of mail.attachments||[]){if(attachment.type==='currency'&&Object.prototype.hasOwnProperty.call(state,attachment.key)){if(['free','swordEssence'].includes(attachment.key))state[attachment.key]=toBigInt(state[attachment.key])+toBigInt(attachment.amount);else state[attachment.key]=(Number(state[attachment.key])||0)+Number(attachment.amount||0)}else if(attachment.type==='item'&&validItemCounts.has(attachment.key))state[attachment.key]=(Number(state[attachment.key])||0)+Number(attachment.amount||0)}
   mail.claimed=true;renderMailDetail();renderMailbox();renderMailButton();render();save();toast('附件已收入囊中');
 }
 async function deleteCurrentMail(){
@@ -1496,6 +1501,8 @@ async function startGame() {
   const offlineBefore=rewardSnapshot();
   processSectYears();
   ensureUpdateCompensationMail();
+  repairClaimedUpdateCompensation();
+  ensureSecondUpdateCompensationMail();
   currentFeature=null;
   $('#featurePanel').classList.add('hidden');
   $('#gameScreen').classList.remove('feature-open');
@@ -2968,7 +2975,7 @@ $$('.outfit-choice').forEach(b=>b.onclick=()=>{$$('.outfit-choice').forEach(x=>x
 function updateOriginPreview(){$('#originStats').textContent=originDescriptions[createOrigin]}
 $$('.origin-choice').forEach(b=>b.onclick=()=>{$$('.origin-choice').forEach(x=>x.classList.remove('active'));b.classList.add('active');createOrigin=b.dataset.origin;updateOriginPreview()});
 $('#randomNameBtn').onclick=randomCreatorName;
-$('#createBtn').onclick=()=>{const n=$('#nameInput').value.trim();if(!n){$('#nameError').textContent='請輸入暱稱';return}const now=gameNow();state={...defaults,...originProfiles[createOrigin],name:n,gender:createGender,appearance:createAppearance,hair:1,outfit:createOutfit,origin:createOrigin,bornAt:now,lastSave:now,sectTechniqueMailVersion:2,firstPath:'',activePath:'',spiritPathOpened:false,tutorialCompleted:false,swordPathOpened:false,bodyPathOpened:false};state.mailbox=[createWelcomeMail(now)];startGame();save()};
+$('#createBtn').onclick=()=>{const n=$('#nameInput').value.trim();if(!n){$('#nameError').textContent='請輸入暱稱';return}const now=gameNow();state={...defaults,...originProfiles[createOrigin],name:n,gender:createGender,appearance:createAppearance,hair:1,outfit:createOutfit,origin:createOrigin,bornAt:now,lastSave:now,sectTechniqueMailVersion:2,updateCompensationMailVersion:2,secondUpdateCompensationMailVersion:1,firstPath:'',activePath:'',spiritPathOpened:false,tutorialCompleted:false,swordPathOpened:false,bodyPathOpened:false};state.mailbox=[createWelcomeMail(now)];startGame();save()};
 
 const ascensionRouteMeta={qi:{name:'練氣天路',reward:[400,400,800]},sword:{name:'淬劍天路',reward:[600,600,1200]},body:{name:'煉體天路',reward:[1000,1000,2000]}};
 const ascensionAttributes=[['trueQi','元息'],['rootBone','命骨'],['physique','玄軀'],['agility','游影']];
