@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.webmanifest?v=20260911-1">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/qstyle-v2/app-icons/wendao-icon-180.png?v=20260911-1">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/qstyle-v2/app-icons/wendao-icon-32.png?v=20260911-1">
-  <link rel="stylesheet" href="styles.css?v=20260913-36">
+  <link rel="stylesheet" href="styles.css?v=20260913-37">
   <link rel="stylesheet" href="q-style.css?v=20260913-26">
   <link rel="stylesheet" href="production-fix.css?v=20260911-05">
   <script>document.documentElement.classList.add('q-style');</script>
@@ -189,6 +189,9 @@
       <button id="mailButton" class="mail-button" type="button" aria-label="開啟信箱">
         <img src="assets/qstyle-v2/mail-button.png" alt="信箱">
         <b id="mailUnreadBadge" class="mail-unread-badge hidden">0</b>
+      </button>
+      <button id="wendaoArenaButton" class="wendao-arena-button hidden" type="button" aria-label="進入問道臺">
+        <img src="assets/qstyle-v2/wendao-arena-entry-v1.png" alt="問道臺">
       </button>
       <button id="encounterButton" class="encounter-button hidden" type="button" aria-label="查看奇遇">
         <img src="assets/qstyle-v2/encounter-button-v1.png" alt="因緣">
@@ -582,9 +585,10 @@
   <audio id="tribulationFailureBgm" src="assets/bgm-tribulation-failure-v1.wav" preload="auto"></audio>
   <audio id="swordBreakthroughBgm" src="assets/bgm-sword-breakthrough-user-v1.wav" preload="auto"></audio>
   <script src="partner-system.js?v=20260911-6"></script>
-  <script src="game.js?v=20260913-98"></script>
+  <script src="game.js?v=20260913-99"></script>
+  <script src="arena.js?v=20260913-1"></script>
   <script src="immortal-potential-system.js?v=20260913-1"></script>
   <script src="production-rows.js?v=20260911-05"></script>
-  <script>window.addEventListener('load',()=>{if(window.WENDAO_BUILD==='20260913-98')return;const key='wendao-build-refresh-20260913-98';if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');let refreshed=false;const refresh=()=>{if(refreshed)return;refreshed=true;location.reload()};navigator.serviceWorker?.addEventListener('controllerchange',refresh,{once:true});navigator.serviceWorker?.getRegistration().then(registration=>registration?.update()).catch(()=>{});setTimeout(refresh,1800)});</script>
+  <script>window.addEventListener('load',()=>{if(window.WENDAO_BUILD==='20260913-99')return;const key='wendao-build-refresh-20260913-99';if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');let refreshed=false;const refresh=()=>{if(refreshed)return;refreshed=true;location.reload()};navigator.serviceWorker?.addEventListener('controllerchange',refresh,{once:true});navigator.serviceWorker?.getRegistration().then(registration=>registration?.update()).catch(()=>{});setTimeout(refresh,1800)});</script>
 </body>
 </html>
