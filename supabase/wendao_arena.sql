@@ -144,7 +144,6 @@ begin
  select * into me from public.arena_profiles where user_id=uid and channel=$1;
  select * into foe from public.arena_profiles where user_id=p_defender and channel=$1;
  if me.user_id is null or foe.user_id is null then raise exception 'opponent unavailable'; end if;
- if exists(select 1 from public.arena_matches where challenger_id=uid and defender_id=p_defender and created_at>=date_trunc('day',timezone('Asia/Taipei',now())) at time zone 'Asia/Taipei') then raise exception 'already challenged today'; end if;
  insert into public.arena_daily(user_id,play_date) values(uid,d) on conflict do nothing;
  select * into daily from public.arena_daily where user_id=uid and play_date=d for update;
  if daily.free_used<10 then update public.arena_daily set free_used=free_used+1 where user_id=uid and play_date=d;
@@ -157,21 +156,23 @@ end $$;
 
 create or replace function public.arena_finish_match(p_match uuid,p_won boolean)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare uid uuid:=(select auth.uid()); m public.arena_matches; a public.arena_profiles; d public.arena_profiles; expected numeric; delta int;
+declare uid uuid:=(select auth.uid()); m public.arena_matches; a public.arena_profiles; d public.arena_profiles; expected numeric; delta int; challenger_power numeric; defender_power numeric; actual_won boolean;
 begin
  select * into m from public.arena_matches where id=p_match and challenger_id=uid for update;
  if m.id is null or m.status<>'pending' then raise exception 'invalid match'; end if;
  if m.created_at<now()-interval '30 minutes' then raise exception 'match expired'; end if;
  select * into a from public.arena_profiles where user_id=m.challenger_id for update;
- select * into d from public.arena_profiles where user_id=m.defender_id for update;
+ select * into d from public.arena_profiles where user_id=m.defender_id for update;`n challenger_power:=greatest(1,coalesce((a.snapshot->>'combat_power')::numeric,1)); defender_power:=greatest(1,coalesce((d.snapshot->>'combat_power')::numeric,1));
+ actual_won:=p_won;
+ if challenger_power < defender_power*0.25 then actual_won:=false; elsif defender_power < challenger_power*0.25 then actual_won:=true; end if;
  expected:=1/(1+power(10,(d.score-a.score)/400.0));
- delta:=round(32*((case when p_won then 1 else 0 end)-expected));
- if p_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
- update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(p_won)::int,losses=losses+((not p_won))::int,
+ delta:=round(32*((case when actual_won then 1 else 0 end)-expected));
+ if actual_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
+ update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(actual_won)::int,losses=losses+((not actual_won))::int,
  reached_at=case when delta>0 then now() else reached_at end,updated_at=now() where user_id=m.challenger_id;
- update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not p_won))::int,losses=losses+(p_won)::int,
+ update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not actual_won))::int,losses=losses+(actual_won)::int,
  reached_at=case when delta<0 then now() else reached_at end,updated_at=now() where user_id=m.defender_id;
- update public.arena_matches set status='finished',winner_id=case when p_won then challenger_id else defender_id end,
+ update public.arena_matches set status='finished',winner_id=case when actual_won then challenger_id else defender_id end,
  challenger_delta=delta,defender_delta=-delta,finished_at=now() where id=p_match;
  return jsonb_build_object('delta',delta,'score',greatest(0,a.score+delta));
 end $$;
