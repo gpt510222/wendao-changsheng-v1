@@ -163,17 +163,15 @@ begin
  if m.created_at<now()-interval '30 minutes' then raise exception 'match expired'; end if;
  select * into a from public.arena_profiles where user_id=m.challenger_id for update;
  select * into d from public.arena_profiles where user_id=m.defender_id for update;
- challenger_power:=greatest(1,coalesce((a.snapshot->>'combat_power')::numeric,1)); defender_power:=greatest(1,coalesce((d.snapshot->>'combat_power')::numeric,1));
- actual_won:=p_won;
- if challenger_power < defender_power*0.25 then actual_won:=false; elsif defender_power < challenger_power*0.25 then actual_won:=true; end if;
+
  expected:=1/(1+power(10,(d.score-a.score)/400.0));
- delta:=round(32*((case when actual_won then 1 else 0 end)-expected));
- if actual_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
- update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(actual_won)::int,losses=losses+((not actual_won))::int,
+ delta:=round(32*((case when p_won then 1 else 0 end)-expected));
+ if p_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
+ update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(actual_won)::int,losses=losses+((not p_won))::int,
  reached_at=case when delta>0 then now() else reached_at end,updated_at=now() where user_id=m.challenger_id;
- update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not actual_won))::int,losses=losses+(actual_won)::int,
+ update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not p_won))::int,losses=losses+(actual_won)::int,
  reached_at=case when delta<0 then now() else reached_at end,updated_at=now() where user_id=m.defender_id;
- update public.arena_matches set status='finished',winner_id=case when actual_won then challenger_id else defender_id end,
+ update public.arena_matches set status='finished',winner_id=case when p_won then challenger_id else defender_id end,
  challenger_delta=delta,defender_delta=-delta,finished_at=now() where id=p_match;
  return jsonb_build_object('delta',delta,'score',greatest(0,a.score+delta));
 end $$;
