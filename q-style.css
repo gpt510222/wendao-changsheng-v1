@@ -757,6 +757,14 @@
 @media(max-width:620px){.q-style .game-screen.immortal-realm:not(.wuxi-wasteland) .scene-bg{content:url('assets/qstyle-v2/ascension/immortal-realm-barren-mobile-v1.png');object-position:center center}.q-style .game-screen.immortal-realm.wuxi-wasteland .scene-bg{content:url('assets/qstyle-v2/ascension/immortal-wuxi-wasteland-v1.png');object-position:center center}}
 @media(prefers-reduced-motion:reduce){.realm-transition-up,.realm-transition-down{animation-duration:.01ms}.realm-transition::after{display:none}}
 
+/* Exactly one realm navigation bar is visible at a time. */
+.q-style .immortal-bottom-nav{display:none!important}
+.q-style .game-screen.immortal-realm .mortal-bottom-nav{display:none!important}
+.q-style .game-screen.immortal-realm .immortal-bottom-nav{display:flex!important}
+html.q-style #gameScreen.game-screen.immortal-realm #spiritPathActions.path-action-group.realm-hidden,
+html.q-style #gameScreen.game-screen.immortal-realm #swordPathActions.path-action-group.realm-hidden,
+html.q-style #gameScreen.game-screen.immortal-realm #bodyPathActions.path-action-group.realm-hidden{display:none!important}
+
 /* Desktop cave facilities: three full-width horizontal cards without scaling the game shell. */
 @media (min-width:900px){
   .q-style .cave-facility-grid{grid-template-columns:1fr;gap:10px}
