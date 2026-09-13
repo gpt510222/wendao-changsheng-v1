@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260913-99';
+window.WENDAO_BUILD='20260913-100';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -1055,17 +1055,18 @@ function buffClock(key){const seconds=Math.max(0,Math.ceil(buffRemaining(key)/10
 function buffPercent(key){const buff=state[key],total=Math.max(1,buff?.total||buffRemaining(key));return Math.max(0,Math.min(100,buffRemaining(key)/total*100))}
 function offlineCultivationGain(from,to){const base=baseRate(),ticks=Math.max(0,(to-from)/5000),infusedMs=state.auraInfusionPath==='qi'?Math.max(0,Math.min(to,state.auraInfusionUntil||0)-from):0;let gain=base*ticks*(1+caveCultivationBonus())*partnerRouteMultiplier('qi')+base*.12*infusedMs/5000;for(const [key,bonus] of [['practiceBuff',4],['transmissionBuff',7]]){const buff=state[key];if(buff?.active)gain+=base*bonus*Math.max(0,Math.min(to,buff.until||0)-from)/5000}return Math.floor(gain)}
 function offlineSwordEssenceGain(ticks,from=gameNow()-ticks*5000,to=gameNow()){if(!state.swordPathOpened)return 0;const base=12.5*pathEfficiency(state.swordLevel||0)*partnerRouteMultiplier('sword'),infusedMs=state.auraInfusionPath==='sword'?Math.max(0,Math.min(to,state.auraInfusionUntil||0)-from):0;return Math.floor(Math.max(0,ticks)*base+base*.12*infusedMs/5000)}
-function spiritPoolProductionBonus(){const upgrades=Math.max(0,(state.spiritPoolLevel||1)-1);return Math.min(upgrades,9)*2+Math.min(Math.max(0,upgrades-9),10)*3+Math.max(0,upgrades-19)*4}
+function spiritPoolProductionBonus(level=state.spiritPoolLevel||1){const upgrades=Math.max(0,level-1);return Math.min(upgrades,9)*2+Math.min(Math.max(0,upgrades-9),10)*3+Math.max(0,upgrades-19)*4}
 function auraRate() { return Math.max(1,Math.floor(5+spiritPoolProductionBonus()+auraEfficiency())); }
 function poolStorageHours() { return Math.min(24,4+Math.max(0,(state.spiritPoolLevel||1)-1)); }
-function auraCapacity() { return Math.floor(20000*Math.pow(Math.max(1,state.spiritPoolLevel||1),1.35)); }
+function auraCapacity(level=state.spiritPoolLevel||1) { return Math.floor(20000*Math.pow(Math.max(1,level),1.35)); }
 function auraInfusionCost(){return Math.max(1000,Math.floor(auraCapacity()*.2))}
 function beginAuraInfusion(path){const labels={qi:'練氣',sword:'淬劍',body:'煉體'};if(!labels[path])return;if(path==='sword'&&!state.swordPathOpened||path==='body'&&!state.bodyPathOpened)return toast(`尚未開啟${labels[path]}之路`);const cost=auraInfusionCost();if(state.aura<cost)return toast(`靈氣不足・需要 ${formatLargeNumber(cost)}`);state.aura-=cost;state.auraInfusionPath=path;state.auraInfusionUntil=gameNow()+4*60*60*1000;toast(`靈氣灌體・${labels[path]}養成效率 +12%・持續4小時`);renderSpiritRootView('pool');render();save()}
 function spiritRootLevelGain(level){return level<1||level>200?0:Math.round((.5+2*(level-1)/199)*10)/10}
 function spiritRootBonus(level){let total=0;for(let rank=1;rank<=Math.min(200,Math.max(0,Math.floor(level||0)));rank++)total+=spiritRootLevelGain(rank);return Math.round(total*10)/10}
 function spiritRootReq(level) { return Math.floor(500*Math.pow(1.38,Math.max(0,level-1))); }
-function poolWoodCost() { return Math.floor(120*Math.pow(state.spiritPoolLevel,1.55)); }
-function poolIronCost() { return Math.floor(50*Math.pow(state.spiritPoolLevel,1.5)); }
+function spiritPoolUpgradeCost(level=state.spiritPoolLevel||1){const next=Math.max(2,Math.floor(level)+1),base=Math.ceil(10*Math.pow(next+3,1.55));return {wood:Math.ceil(base*1.15),iron:Math.ceil(base*.55)}}
+function poolWoodCost() { return spiritPoolUpgradeCost().wood; }
+function poolIronCost() { return spiritPoolUpgradeCost().iron; }
 function rootRank(level) { const rank=Math.min(200,Math.max(0,Math.floor(level||0)));return rank===0?'未開啟':`${spiritRootRanks[Math.min(Math.floor((rank-1)/10),spiritRootRanks.length-1)]}・${(rank-1)%10+1}階`; }
 function normalizeSpiritRootCurve(needsMigration=false){
   const roots=['metalRoot','woodRoot','waterRoot','fireRoot','earthRoot'];
@@ -2549,9 +2550,9 @@ function renderSpiritRootView(view) {
   $$('.root-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.rootView===view));
   const inner=$('#rootInner'); if(!inner)return;
   if(view==='pool') {
-    const woodCost=poolWoodCost(),ironCost=poolIronCost(),can=state.wood>=woodCost&&state.meteorIron>=ironCost;
+    const woodCost=poolWoodCost(),ironCost=poolIronCost(),can=state.wood>=woodCost&&state.meteorIron>=ironCost,nextLevel=state.spiritPoolLevel+1,nextRate=Math.max(1,Math.floor(5+spiritPoolProductionBonus(nextLevel)+auraEfficiency())),nextCapacity=auraCapacity(nextLevel);
     const infusionCost=auraInfusionCost(),infusionLabels={qi:'練氣',sword:'淬劍',body:'煉體'},infusionActive=(state.auraInfusionUntil||0)>gameNow(),infusionStatus=infusionActive?`${infusionLabels[state.auraInfusionPath]}加速中・剩餘 ${formatDuration(state.auraInfusionUntil-gameNow())}`:'目前未灌注';
-inner.innerHTML=`<div class="pool-page"><div class="pool-level">${state.spiritPoolLevel}階靈池</div><div class="pool-art small"><span></span><img src="assets/qstyle-v2/spirit-pool.png" alt="靈池"></div><div class="pool-stats"><div><small>靈氣產量・天契 +${formatLargeNumber(auraEfficiency())}</small><b>${formatLargeNumber(auraRate())} / 5秒</b></div><div><small>靈池容量・不受天契影響</small><b>${formatLargeNumber(state.aura)} / ${formatLargeNumber(auraCapacity())}</b></div></div><div class="pool-materials"><div class="pool-owned-materials"><span><img src="assets/qstyle-v2/wood-cutout.png" alt="木材"><em>木材</em><b>${formatLargeNumber(state.wood)}</b></span><i></i><span><img src="assets/qstyle-v2/meteor-iron-cutout.png" alt="隕鐵"><em>隕鐵</em><b>${formatLargeNumber(state.meteorIron)}</b></span></div><div class="pool-upgrade-cost">升階需要：木材 ${formatLargeNumber(woodCost)}・隕鐵 ${formatLargeNumber(ironCost)}</div></div><section class="aura-infusion"><div><b>靈氣灌體</b><small>消耗 ${formatLargeNumber(infusionCost)} 靈氣，選定一路養成效率 +12%，持續4小時；重新選擇會覆蓋原效果。</small><em>${infusionStatus}</em></div><nav><button data-aura-infusion="qi" ${state.aura<infusionCost?'disabled':''}>灌注練氣</button><button data-aura-infusion="sword" ${state.aura<infusionCost||!state.swordPathOpened?'disabled':''}>灌注淬劍</button><button data-aura-infusion="body" ${state.aura<infusionCost||!state.bodyPathOpened?'disabled':''}>灌注煉體</button></nav></section><button id="upgradePoolBtn" class="jade-button" ${can?'':'disabled'}>靈池升階</button></div>`;
+inner.innerHTML=`<div class="pool-page"><div class="pool-level">${state.spiritPoolLevel}階靈池</div><div class="pool-art small"><span></span><img src="assets/qstyle-v2/spirit-pool.png" alt="靈池"></div><div class="pool-stats"><div><small>靈氣產量・天契 +${formatLargeNumber(auraEfficiency())}</small><b>${formatLargeNumber(auraRate())} / 5秒</b></div><div><small>靈池容量・不受天契影響</small><b>${formatLargeNumber(state.aura)} / ${formatLargeNumber(auraCapacity())}</b></div></div><div class="pool-materials"><div class="pool-owned-materials"><span><img src="assets/qstyle-v2/wood-cutout.png" alt="木材"><em>木材</em><b>${formatLargeNumber(state.wood)}</b></span><i></i><span><img src="assets/qstyle-v2/meteor-iron-cutout.png" alt="隕鐵"><em>隕鐵</em><b>${formatLargeNumber(state.meteorIron)}</b></span></div><div class="pool-upgrade-cost">升至 ${nextLevel} 階：木材 ${formatLargeNumber(woodCost)}・隕鐵 ${formatLargeNumber(ironCost)}<br>產量 ${formatLargeNumber(nextRate)} / 5秒・容量 ${formatLargeNumber(nextCapacity)}</div></div><section class="aura-infusion"><div><b>靈氣灌體</b><small>消耗 ${formatLargeNumber(infusionCost)} 靈氣，選定一路養成效率 +12%，持續4小時；重新選擇會覆蓋原效果。</small><em>${infusionStatus}</em></div><nav><button data-aura-infusion="qi" ${state.aura<infusionCost?'disabled':''}>灌注練氣</button><button data-aura-infusion="sword" ${state.aura<infusionCost||!state.swordPathOpened?'disabled':''}>灌注淬劍</button><button data-aura-infusion="body" ${state.aura<infusionCost||!state.bodyPathOpened?'disabled':''}>灌注煉體</button></nav></section><button id="upgradePoolBtn" class="jade-button" ${can?'':'disabled'}>靈池升階</button></div>`;
     $('#upgradePoolBtn').onclick=upgradeSpiritPool;
     $$('[data-aura-infusion]').forEach(button=>button.onclick=()=>beginAuraInfusion(button.dataset.auraInfusion));
     return;
