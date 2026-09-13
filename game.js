@@ -1,8 +1,8 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260913-90';
+window.WENDAO_BUILD='20260913-91';
 const qStyleMode=true;
-const formalImmortalRealmEnabled=false;
+const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
 let leaderboardSyncTimer=0,leaderboardSyncInFlight=false,leaderboardKnownPower=null,leaderboardKnownName='',leaderboardKnownAscensionKey='';
 let jadeGrantSyncInFlight=false,currentPlayerUid='';
