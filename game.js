@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260913-87';
+window.WENDAO_BUILD='20260913-88';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=false;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -789,6 +789,7 @@ function refreshBodyTrainingCharges(){const now=gameNow();if(!state.bodyTraining
 function bodyFoundationsReady(){const need=bodySessionNeed();return ['bone','blood','organs'].every(key=>(state.bodyFoundations?.[key]||0)>=need)}
 function syncBodyTemperFromFoundations(){const need=bodySessionNeed(),ratio=Math.min(1,...['bone','blood','organs'].map(key=>(state.bodyFoundations?.[key]||0)/need));state.bodyTemper=Math.floor(bodyTemperNeed()*Math.max(0,ratio))}
 function resetBodyFoundations(){state.bodyFoundations={bone:0,blood:0,organs:0};state.bodyTemper=0}
+const bodyStagesPerRealm=4,bodyAscensionLevel=68,bodyTrialLevels=[16,36,56,68,88];
 const bodyBreakthroughAreaLevels=[6,14,23,30,30];
 function bodyTrialRequired(nextLevel=state.bodyLevel+1){return bodyTrialLevels.includes(nextLevel)}
 function bodyBreakthroughRequirement(nextLevel=state.bodyLevel+1){const index=bodyTrialLevels.indexOf(nextLevel);if(index<0)return null;const areaLevel=bodyBreakthroughAreaLevels[index],scale=[.25,.4,.58,.72,.8][index],food=Math.floor(areaCapacity(caveAreas.food,areaLevel)*scale),wood=Math.floor(areaCapacity(caveAreas.wood,areaLevel)*scale),iron=Math.floor(areaCapacity(caveAreas.meteorIron,areaLevel)*scale);return {areaLevel,food,wood,iron,targetRealm:Math.floor(nextLevel/bodyStagesPerRealm)+1}}
