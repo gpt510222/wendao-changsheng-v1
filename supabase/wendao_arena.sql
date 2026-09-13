@@ -71,6 +71,26 @@ begin
  where channel=$1;
 end $$;
 
+create or replace function private.arena_seed_ranked_profiles(p_channel text) returns void language plpgsql security definer set search_path='' as $$
+begin
+ insert into public.arena_profiles(user_id,channel,player_name,snapshot)
+ select r.user_id,p_channel,r.player_name,
+   jsonb_build_object(
+    'eligible',true,
+    'highest_realm',case
+      when coalesce(r.body_level,0)/4.0>=greatest(coalesce(r.spirit_level,0)/10.0,coalesce(r.sword_level,0)/10.0) then '煉體・第'||(floor(coalesce(r.body_level,0)/4)+1)::int||'境'||(mod(coalesce(r.body_level,0),4)+1)::int||'階'
+      when coalesce(r.sword_level,0)>=coalesce(r.spirit_level,0) then '淬劍・第'||(floor(coalesce(r.sword_level,0)/10)+1)::int||'境'||(mod(coalesce(r.sword_level,0),10)+1)::int||'階'
+      else '練氣・第'||(floor(coalesce(r.spirit_level,0)/10)+1)::int||'境'||(mod(coalesce(r.spirit_level,0),10)+1)::int||'階' end,
+    'combat_power',greatest(1,r.combat_power),'gender','男','sword_embryo','',
+    'moves',jsonb_build_array(jsonb_build_object('name','凝念馭元','min',0.86,'max',1.04),jsonb_build_object('name','抱元守一','min',0.92,'max',1.08)),
+    'stats',jsonb_build_object('maxHp',greatest(125,round(sqrt(greatest(1,r.combat_power))*16)),'attack',greatest(12,round(sqrt(greatest(1,r.combat_power))*1.8)),'defense',greatest(0,round(sqrt(greatest(1,r.combat_power))*.65)),'evasion',60,'accuracy',75,'crit',8,'damageReduction',0),
+    'week_start',private.arena_week_start()::text,'rank_seeded',true)
+ from public.player_rankings r
+ where (coalesce(r.spirit_level,0)>=40 or coalesce(r.sword_level,0)>=40 or coalesce(r.body_level,0)>=16)
+   and (case when p_channel='formal' then r.game_version like 'v1.0.0%' else r.game_version like '20260902-49%' end)
+ on conflict(user_id) do nothing;
+end $$;
+
 create or replace function public.arena_sync_profile(p_channel text,p_name text,p_snapshot jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare uid uuid:=(select auth.uid()); result jsonb; wk date:=private.arena_week_start();
@@ -91,6 +111,7 @@ returns table(user_id uuid,player_name text,score int,snapshot jsonb) language p
 declare uid uuid:=(select auth.uid()); my_score int:=1000;
 begin
  perform private.arena_rollover(p_channel);
+ perform private.arena_seed_ranked_profiles(p_channel);
  select score into my_score from public.arena_profiles where arena_profiles.user_id=uid and channel=$1;
  return query select p.user_id,p.player_name,p.score,p.snapshot from public.arena_profiles p
  where p.channel=$1 and p.user_id<>uid and coalesce((p.snapshot->>'eligible')::boolean,false)=true
@@ -118,6 +139,7 @@ declare uid uuid:=(select auth.uid()); d date:=(timezone('Asia/Taipei',now()))::
 begin
  if uid=p_defender then raise exception 'cannot challenge self'; end if;
  perform private.arena_rollover(p_channel);
+ perform private.arena_seed_ranked_profiles(p_channel);
  select * into me from public.arena_profiles where user_id=uid and channel=$1;
  select * into foe from public.arena_profiles where user_id=p_defender and channel=$1;
  if me.user_id is null or foe.user_id is null then raise exception 'opponent unavailable'; end if;
