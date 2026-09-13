@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260913-92';
+window.WENDAO_BUILD='20260913-93';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -874,7 +874,7 @@ function realmName(level, arr) {
 }
 function spiritRealmIndex(){return Math.floor(Math.max(0,state.spiritLevel||0)/10)}
 function worldProgressLevel(){return Math.max(state.spiritLevel||0,state.swordLevel||0,state.bodyLevel||0)}
-function worldProgressTier(){return Math.max(1,Math.min(9,Math.floor((state.spiritLevel||0)/10)+1,Math.floor((state.swordLevel||0)/10)+1,bodyRealmIndex()+1))}
+function worldProgressTier(){const highest=Math.max(Math.floor((state.spiritLevel||0)/10)+1,Math.floor((state.swordLevel||0)/10)+1,bodyRealmIndex()+1);return Math.max(1,Math.min(9,highest))}
 function worldProgressGateText(level){return `任一路線達第 ${Math.floor(Math.max(0,level)/10)+1} 境`}
 function swordPathUnlocked(){return !!state.swordPathOpened}
 function swordIntentUnlocked(){return (state.swordLevel||0)>=40&&(state.swordTrialWins||0)>=40&&!!state.swordEmbryo}
