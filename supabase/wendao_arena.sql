@@ -162,7 +162,8 @@ begin
  if m.id is null or m.status<>'pending' then raise exception 'invalid match'; end if;
  if m.created_at<now()-interval '30 minutes' then raise exception 'match expired'; end if;
  select * into a from public.arena_profiles where user_id=m.challenger_id for update;
- select * into d from public.arena_profiles where user_id=m.defender_id for update;`n challenger_power:=greatest(1,coalesce((a.snapshot->>'combat_power')::numeric,1)); defender_power:=greatest(1,coalesce((d.snapshot->>'combat_power')::numeric,1));
+ select * into d from public.arena_profiles where user_id=m.defender_id for update;
+ challenger_power:=greatest(1,coalesce((a.snapshot->>'combat_power')::numeric,1)); defender_power:=greatest(1,coalesce((d.snapshot->>'combat_power')::numeric,1));
  actual_won:=p_won;
  if challenger_power < defender_power*0.25 then actual_won:=false; elsif defender_power < challenger_power*0.25 then actual_won:=true; end if;
  expected:=1/(1+power(10,(d.score-a.score)/400.0));
