@@ -45,11 +45,34 @@ create table if not exists public.arena_rewards (
   created_at timestamptz not null default now(),
   primary key(user_id,channel,week_start)
 );
+
+-- Preserve existing scores and today's purchases while separating channels.
+do $$ begin
+ if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='arena_daily' and column_name='channel') then
+  alter table public.arena_daily add column channel text not null default 'formal';
+  update public.arena_daily d set channel=p.channel from public.arena_profiles p where p.user_id=d.user_id;
+  alter table public.arena_daily drop constraint arena_daily_pkey;
+  alter table public.arena_daily add primary key(user_id,channel,play_date);
+ end if;
+ if (select cardinality(conkey) from pg_constraint where conrelid='public.arena_profiles'::regclass and contype='p')=1 then
+  alter table public.arena_profiles drop constraint arena_profiles_pkey;
+  alter table public.arena_profiles add primary key(user_id,channel);
+ end if;
+end $$;
+
 alter table public.arena_profiles enable row level security;
 alter table public.arena_daily enable row level security;
 alter table public.arena_matches enable row level security;
 alter table public.arena_rewards enable row level security;
 revoke all on public.arena_profiles,public.arena_daily,public.arena_matches,public.arena_rewards from anon,authenticated;
+
+create or replace function private.arena_canonical(p_channel text)
+returns setof public.arena_profiles language sql stable security definer set search_path='' as $$
+ select distinct on (lower(trim(p.player_name))) p.* from public.arena_profiles p
+ where p.channel=$1
+ order by lower(trim(p.player_name)),coalesce((p.snapshot->>'schema_version')='2',false) desc,
+ coalesce((p.snapshot->>'captured_at')::numeric,0) desc,p.updated_at desc,p.user_id
+$$;
 
 create or replace function private.arena_week_start() returns date language sql stable set search_path='' as $$
  select (date_trunc('week',timezone('Asia/Taipei',now())))::date
@@ -64,7 +87,7 @@ begin
  select user_id,p_channel,old_week,rn,
    case when rn<=10 then 16-rn when rn<=20 then 5 when rn<=30 then 4 when rn<=40 then 3 else 2 end
  from (select user_id,row_number() over(order by score desc,wins desc,reached_at asc) rn
-       from public.arena_profiles where channel=$1 and (wins+losses)>0) ranked
+       from private.arena_canonical(p_channel) where (wins+losses)>0) ranked
  where rn<=50 on conflict do nothing;
  update public.arena_profiles set score=1000,wins=0,losses=0,reached_at=now(),
    snapshot=jsonb_set(snapshot,'{week_start}',to_jsonb(current_week::text)),updated_at=now()
@@ -73,24 +96,9 @@ end $$;
 
 create or replace function private.arena_seed_ranked_profiles(p_channel text) returns void language plpgsql security definer set search_path='' as $$
 begin
- insert into public.arena_profiles(user_id,channel,player_name,snapshot)
- select r.user_id,p_channel,r.player_name,
-   jsonb_build_object(
-    'eligible',true,
-    'highest_path',case when coalesce(r.body_level,0)/4.0>=greatest(coalesce(r.spirit_level,0)/10.0,coalesce(r.sword_level,0)/10.0) then 'body' when coalesce(r.sword_level,0)>=coalesce(r.spirit_level,0) then 'sword' else 'spirit' end,
-    'highest_level',case when coalesce(r.body_level,0)/4.0>=greatest(coalesce(r.spirit_level,0)/10.0,coalesce(r.sword_level,0)/10.0) then coalesce(r.body_level,0) when coalesce(r.sword_level,0)>=coalesce(r.spirit_level,0) then coalesce(r.sword_level,0) else coalesce(r.spirit_level,0) end,
-    'highest_realm',case
-      when coalesce(r.body_level,0)/4.0>=greatest(coalesce(r.spirit_level,0)/10.0,coalesce(r.sword_level,0)/10.0) then '煉體・第'||(floor(coalesce(r.body_level,0)/4)+1)::int||'境'||(mod(coalesce(r.body_level,0),4)+1)::int||'階'
-      when coalesce(r.sword_level,0)>=coalesce(r.spirit_level,0) then '淬劍・第'||(floor(coalesce(r.sword_level,0)/10)+1)::int||'境'||(mod(coalesce(r.sword_level,0),10)+1)::int||'階'
-      else '練氣・第'||(floor(coalesce(r.spirit_level,0)/10)+1)::int||'境'||(mod(coalesce(r.spirit_level,0),10)+1)::int||'階' end,
-    'combat_power',greatest(1,r.combat_power),'gender','男','sword_embryo','',
-    'moves',jsonb_build_array(jsonb_build_object('name','凝念馭元','min',0.86,'max',1.04),jsonb_build_object('name','抱元守一','min',0.92,'max',1.08)),
-    'stats',jsonb_build_object('maxHp',greatest(125,round(sqrt(greatest(1,r.combat_power))*16)),'attack',greatest(12,round(sqrt(greatest(1,r.combat_power))*1.8)),'defense',greatest(0,round(sqrt(greatest(1,r.combat_power))*.65)),'evasion',60,'accuracy',75,'crit',8,'damageReduction',0),
-    'week_start',private.arena_week_start()::text,'rank_seeded',true)
- from public.player_rankings r
- where (coalesce(r.spirit_level,0)>=40 or coalesce(r.sword_level,0)>=40 or coalesce(r.body_level,0)>=16)
-   and (case when p_channel='formal' then r.game_version like 'v1.0.0%' else r.game_version like '20260902-49%' end)
- on conflict(user_id) do update set player_name=excluded.player_name,snapshot=excluded.snapshot where public.arena_profiles.snapshot->>'rank_seeded'='true';
+ -- Legacy function retained for compatibility. Real profiles are uploaded by
+ -- eligible clients; ranking-only records cannot reconstruct five attributes.
+ return;
 end $$;
 
 create or replace function public.arena_sync_profile(p_channel text,p_name text,p_snapshot jsonb)
@@ -100,11 +108,24 @@ begin
  if uid is null then raise exception 'authentication required'; end if;
  if p_channel not in ('formal','test') then raise exception 'invalid channel'; end if;
  perform private.arena_rollover(p_channel);
- p_snapshot:=coalesce(p_snapshot,'{}'::jsonb)||jsonb_build_object('week_start',wk::text);
+ if p_snapshot->>'schema_version' is distinct from '2' or not(p_snapshot ? 'core') then
+   raise exception '請重新整理遊戲以更新問道臺';
+ end if;
+ if jsonb_array_length(p_snapshot->'moves') not between 1 and 2 then raise exception '請先配置招式'; end if;
+ if not (p_snapshot->'core' ?& array['trueQi','rootBone','physique','agility','spiritualPower']) then raise exception '戰鬥屬性不完整'; end if;
+ if not (p_snapshot->'stats' ?& array['maxHp','attack','defense','evasion','accuracy','crit','qiAttack','bodyAttack']) then raise exception '戰鬥屬性不完整'; end if;
+ if (p_snapshot#>>'{stats,maxHp}')::numeric<=0 or (p_snapshot#>>'{stats,crit}')::numeric not between 0 and 1 then raise exception '戰鬥屬性不正確'; end if;
+ p_snapshot:=p_snapshot||jsonb_build_object('week_start',wk::text,'captured_at',floor(extract(epoch from now())*1000));
+ -- Five-minute snapshots are immutable between refreshes.
+ if exists(select 1 from public.arena_profiles p where p.user_id=uid and p.channel=p_channel
+   and p.snapshot->>'schema_version'='2' and (p.snapshot->>'captured_at')::numeric>extract(epoch from now()-interval '5 minutes')*1000) then
+   select jsonb_build_object('score',p.score) into result from public.arena_profiles p where p.user_id=uid and p.channel=p_channel;
+   return result;
+ end if;
  insert into public.arena_profiles(user_id,channel,player_name,snapshot)
  values(uid,p_channel,left(coalesce(nullif(trim(p_name),''),'無名修士'),20),p_snapshot)
- on conflict(user_id) do update set channel=excluded.channel,player_name=excluded.player_name,snapshot=excluded.snapshot,updated_at=now();
- select jsonb_build_object('score',score,'wins',wins,'losses',losses) into result from public.arena_profiles where user_id=uid;
+ on conflict(user_id,channel) do update set channel=excluded.channel,player_name=excluded.player_name,snapshot=excluded.snapshot,updated_at=now();
+ select jsonb_build_object('score',score,'wins',wins,'losses',losses) into result from public.arena_profiles where user_id=uid and channel=p_channel;
  return result;
 end $$;
 
@@ -115,22 +136,26 @@ begin
  perform private.arena_rollover(p_channel);
  perform private.arena_seed_ranked_profiles(p_channel);
  select p.score into my_score from public.arena_profiles p where p.user_id=uid and p.channel=$1;
- return query select q.user_id,q.player_name,q.score,q.snapshot from (select distinct on (lower(trim(p.player_name))) p.user_id,p.player_name,p.score,p.snapshot from public.arena_profiles p where p.channel=$1 and p.user_id<>uid and coalesce((p.snapshot->>'eligible')::boolean,false)=true order by lower(trim(p.player_name)),p.score desc,p.updated_at desc) q
- order by abs(q.score-coalesce(my_score,1000)),random() limit 30;
+ return query select p.user_id,p.player_name,p.score,p.snapshot from private.arena_canonical(p_channel) p
+ where p.user_id<>uid and p.snapshot->>'schema_version'='2' and p.snapshot->>'eligible'='true'
+ and lower(trim(p.player_name))<>(select lower(trim(me.player_name)) from public.arena_profiles me where me.user_id=uid and me.channel=p_channel)
+ order by abs(p.score-coalesce(my_score,1000)),random() limit 30;
 end $$;
 
-create or replace function public.arena_buy_attempt(p_kind text)
+drop function if exists public.arena_buy_attempt(text);
+create or replace function public.arena_buy_attempt(p_kind text,p_channel text)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare uid uuid:=(select auth.uid()); d date:=(timezone('Asia/Taipei',now()))::date; row_data public.arena_daily;
 begin
+ if uid is null or p_channel not in ('formal','test') then raise exception 'invalid channel'; end if;
  if p_kind not in ('stone','jade') then raise exception 'invalid purchase'; end if;
- insert into public.arena_daily(user_id,play_date) values(uid,d) on conflict do nothing;
- select * into row_data from public.arena_daily where user_id=uid and play_date=d for update;
+ insert into public.arena_daily(user_id,channel,play_date) values(uid,p_channel,d) on conflict do nothing;
+ select * into row_data from public.arena_daily where user_id=uid and channel=p_channel and play_date=d for update;
  if p_kind='stone' and row_data.stone_bought>=5 then raise exception 'stone purchase limit'; end if;
  if p_kind='jade' and row_data.jade_bought>=5 then raise exception 'jade purchase limit'; end if;
  update public.arena_daily set stone_bought=stone_bought+(p_kind='stone')::int,
  jade_bought=jade_bought+(p_kind='jade')::int,bought_available=bought_available+1
- where user_id=uid and play_date=d returning * into row_data;
+ where user_id=uid and channel=p_channel and play_date=d returning * into row_data;
  return to_jsonb(row_data);
 end $$;
 
@@ -144,36 +169,36 @@ begin
  select * into me from public.arena_profiles where user_id=uid and channel=$1;
  select * into foe from public.arena_profiles where user_id=p_defender and channel=$1;
  if me.user_id is null or foe.user_id is null then raise exception 'opponent unavailable'; end if;
- insert into public.arena_daily(user_id,play_date) values(uid,d) on conflict do nothing;
- select * into daily from public.arena_daily where user_id=uid and play_date=d for update;
- if daily.free_used<10 then update public.arena_daily set free_used=free_used+1 where user_id=uid and play_date=d;
- elsif daily.bought_available>0 then update public.arena_daily set bought_available=bought_available-1 where user_id=uid and play_date=d;
+ if me.snapshot->>'schema_version' is distinct from '2' or foe.snapshot->>'schema_version' is distinct from '2' then raise exception '對手尚未更新戰鬥屬性，請刷新名單'; end if;
+ if me.snapshot->>'eligible'<>'true' or foe.snapshot->>'eligible'<>'true' then raise exception '境界尚未達到問道臺門檻'; end if;
+ if not exists(select 1 from private.arena_canonical(p_channel) p where p.user_id=p_defender) or lower(trim(me.player_name))=lower(trim(foe.player_name)) then raise exception '舊存檔不列入挑戰，請刷新名單'; end if;
+ insert into public.arena_daily(user_id,channel,play_date) values(uid,p_channel,d) on conflict do nothing;
+ select * into daily from public.arena_daily where user_id=uid and channel=p_channel and play_date=d for update;
+ if daily.free_used<10 then update public.arena_daily set free_used=free_used+1 where user_id=uid and channel=p_channel and play_date=d;
+ elsif daily.bought_available>0 then update public.arena_daily set bought_available=bought_available-1 where user_id=uid and channel=p_channel and play_date=d;
  else raise exception 'no attempts'; end if;
  insert into public.arena_matches(channel,challenger_id,defender_id,challenger_name,defender_name,challenger_snapshot,defender_snapshot)
  values(p_channel,uid,p_defender,me.player_name,foe.player_name,me.snapshot,foe.snapshot) returning id into match_id;
- return jsonb_build_object('match_id',match_id,'opponent',foe.snapshot,'opponent_name',foe.player_name,'opponent_score',foe.score);
+ return jsonb_build_object('match_id',match_id,'challenger',me.snapshot,'opponent',foe.snapshot,'opponent_name',foe.player_name,'opponent_score',foe.score);
 end $$;
 
 create or replace function public.arena_finish_match(p_match uuid,p_won boolean)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare uid uuid:=(select auth.uid()); m public.arena_matches; a public.arena_profiles; d public.arena_profiles; expected numeric; delta int; challenger_power numeric; defender_power numeric; actual_won boolean;
+declare uid uuid:=(select auth.uid()); m public.arena_matches; a public.arena_profiles; d public.arena_profiles; expected numeric; delta int;
 begin
  select * into m from public.arena_matches where id=p_match and challenger_id=uid for update;
  if m.id is null or m.status<>'pending' then raise exception 'invalid match'; end if;
  if m.created_at<now()-interval '30 minutes' then raise exception 'match expired'; end if;
- select * into a from public.arena_profiles where user_id=m.challenger_id for update;
- select * into d from public.arena_profiles where user_id=m.defender_id for update;
- challenger_power:=greatest(1,coalesce((a.snapshot->>'combat_power')::numeric,1)); defender_power:=greatest(1,coalesce((d.snapshot->>'combat_power')::numeric,1));
- actual_won:=p_won;
- if challenger_power < defender_power*0.25 then actual_won:=false; elsif defender_power < challenger_power*0.25 then actual_won:=true; end if;
+ select * into a from public.arena_profiles where user_id=m.challenger_id and channel=m.channel for update;
+ select * into d from public.arena_profiles where user_id=m.defender_id and channel=m.channel for update;
  expected:=1/(1+power(10,(d.score-a.score)/400.0));
- delta:=round(32*((case when actual_won then 1 else 0 end)-expected));
- if actual_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
- update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(actual_won)::int,losses=losses+((not p_won))::int,
- reached_at=case when delta>0 then now() else reached_at end,updated_at=now() where user_id=m.challenger_id;
- update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not actual_won))::int,losses=losses+(actual_won)::int,
- reached_at=case when delta<0 then now() else reached_at end,updated_at=now() where user_id=m.defender_id;
- update public.arena_matches set status='finished',winner_id=case when actual_won then challenger_id else defender_id end,
+ delta:=round(32*((case when p_won then 1 else 0 end)-expected));
+ if p_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
+ update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(p_won)::int,losses=losses+((not p_won))::int,
+ reached_at=case when delta>0 then now() else reached_at end,updated_at=now() where user_id=m.challenger_id and channel=m.channel;
+ update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not p_won))::int,losses=losses+(p_won)::int,
+ reached_at=case when delta<0 then now() else reached_at end,updated_at=now() where user_id=m.defender_id and channel=m.channel;
+ update public.arena_matches set status='finished',winner_id=case when p_won then challenger_id else defender_id end,
  challenger_delta=delta,defender_delta=-delta,finished_at=now() where id=p_match;
  return jsonb_build_object('delta',delta,'score',greatest(0,a.score+delta));
 end $$;
@@ -184,18 +209,20 @@ declare uid uuid:=(select auth.uid()); d date:=(timezone('Asia/Taipei',now()))::
 begin
  perform private.arena_rollover(p_channel);
  select * into p from public.arena_profiles where user_id=uid and channel=$1;
- insert into public.arena_daily(user_id,play_date) values(uid,d) on conflict do nothing;
- select * into dayrow from public.arena_daily where user_id=uid and play_date=d;
- if coalesce(p.wins,0)+coalesce(p.losses,0)>0 then
-  select count(*)+1 into own_rank from public.arena_profiles x where x.channel=$1 and (x.wins+x.losses)>0 and (x.score>p.score or x.score=p.score and (x.wins>p.wins or x.wins=p.wins and x.reached_at<p.reached_at));
- end if;
+ insert into public.arena_daily(user_id,channel,play_date) values(uid,p_channel,d) on conflict do nothing;
+ select * into dayrow from public.arena_daily where user_id=uid and channel=p_channel and play_date=d;
+ select ranked.rn into own_rank from (
+  select row_number() over(order by c.score desc,c.wins desc,c.reached_at asc,c.user_id) rn,c.player_name
+  from private.arena_canonical(p_channel) c where c.wins+c.losses>0
+ ) ranked where lower(trim(ranked.player_name))=lower(trim(p.player_name));
  return jsonb_build_object('score',coalesce(p.score,1000),'wins',coalesce(p.wins,0),'losses',coalesce(p.losses,0),'rank',own_rank,
  'free_remaining',greatest(0,10-dayrow.free_used),'bought_available',dayrow.bought_available,'stone_bought',dayrow.stone_bought,'jade_bought',dayrow.jade_bought);
 end $$;
 
 create or replace function public.arena_rankings(p_channel text)
 returns table(rank bigint,player_name text,score int,wins int,losses int) language sql security definer set search_path='' as $$
- select * from (select row_number() over(order by score desc,wins desc,reached_at asc) rank,player_name,score,wins,losses from (select distinct on (lower(trim(player_name))) player_name,score,wins,losses,reached_at from public.arena_profiles where channel=$1 and (wins+losses)>0 order by lower(trim(player_name)),score desc,wins desc,reached_at asc) unique_players) r where rank<=50
+ select * from (select row_number() over(order by p.score desc,p.wins desc,p.reached_at asc,p.user_id) rank,p.player_name,p.score,p.wins,p.losses
+ from private.arena_canonical(p_channel) p where (p.wins+p.losses)>0) r where r.rank<=50
 $$;
 create or replace function public.arena_history(p_channel text)
 returns table(id uuid,challenger_name text,defender_name text,winner_id uuid,challenger_delta int,defender_delta int,created_at timestamptz,was_challenger boolean)
@@ -211,5 +238,6 @@ begin
  return query update public.arena_rewards set claimed=true where user_id=(select auth.uid()) and channel=$1 and not claimed
  returning arena_rewards.week_start,arena_rewards.rank,arena_rewards.stone_bundle_count;
 end $$;
-revoke execute on function public.arena_sync_profile(text,text,jsonb),public.arena_opponents(text),public.arena_buy_attempt(text),public.arena_begin_challenge(text,uuid),public.arena_finish_match(uuid,boolean),public.arena_status(text),public.arena_rankings(text),public.arena_history(text),public.arena_claim_rewards(text) from public,anon;
-grant execute on function public.arena_sync_profile(text,text,jsonb),public.arena_opponents(text),public.arena_buy_attempt(text),public.arena_begin_challenge(text,uuid),public.arena_finish_match(uuid,boolean),public.arena_status(text),public.arena_rankings(text),public.arena_history(text),public.arena_claim_rewards(text) to authenticated;
+revoke execute on function public.arena_sync_profile(text,text,jsonb),public.arena_opponents(text),public.arena_buy_attempt(text,text),public.arena_begin_challenge(text,uuid),public.arena_finish_match(uuid,boolean),public.arena_status(text),public.arena_rankings(text),public.arena_history(text),public.arena_claim_rewards(text) from public,anon;
+grant execute on function public.arena_sync_profile(text,text,jsonb),public.arena_opponents(text),public.arena_buy_attempt(text,text),public.arena_begin_challenge(text,uuid),public.arena_finish_match(uuid,boolean),public.arena_status(text),public.arena_rankings(text),public.arena_history(text),public.arena_claim_rewards(text) to authenticated;
+revoke all on function private.arena_canonical(text) from public,anon,authenticated;
