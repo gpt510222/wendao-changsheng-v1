@@ -2395,7 +2395,12 @@ const caveFacilities={
   body:{label:'鍛體室',seal:'體',level:'caveBodyLevel',enabled:'caveBodyEnabled',description:'以地脈協助收功，降低鍛體材料消耗與受傷風險。'}
 };
 function caveAreaLevel(area,level=state[area.level]){return Math.max(1,Math.floor(level||1))}
-function areaCapacity(area,level=state[area.level]){const value=caveAreaLevel(area,level);return area.value==='food'?300+100*value+20*value*value:250+80*value+16*value*value}
+function areaCapacity(area,level=state[area.level]){
+  const value=caveAreaLevel(area,level);
+  if(area.value==='food')return 180*value*value-180*value+4800;
+  if(area.value==='wood')return 120*value*value-120*value+720;
+  return 60*value*value-60*value+360;
+}
 function areaWorkerMax(area,level=state[area.level]){
   const value=caveAreaLevel(area,level);
   if(area.value==='food')return Math.floor(value*3.5);
@@ -2403,7 +2408,11 @@ function areaWorkerMax(area,level=state[area.level]){
   return value;
 }
 function areaOutput(){return 1}
-function areaUpgradeCost(area,level=state[area.level]){const next=caveAreaLevel(area,level)+1,base=Math.ceil(20*Math.pow(next+3,1.55)),weight=area.value==='food'?1:area.value==='wood'?1.25:1.5;return {wood:Math.ceil(base*weight),food:area.value==='food'?0:Math.ceil(base*(area.value==='wood'?.625:.94))}}
+function areaUpgradeCost(area,level=state[area.level]){
+  const value=caveAreaLevel(area,level);
+  const wood=area.value==='meteorIron'?40*value*value-40*value+120:60*value*value-60*value+120;
+  return {wood,food:0};
+}
 function normalizeCaveWorkers(){state.workerSpiritStone=0;Object.values(caveAreas).forEach(area=>{state[area.level]=caveAreaLevel(area);state[area.worker]=Math.max(0,Math.min(Math.floor(state[area.worker]||0),areaWorkerMax(area)))})}
 function normalizeCaveState(){
   state.caveCoreLevel=Math.max(1,Math.min(7,Math.floor(state.caveCoreLevel||1)));
