@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260914-105';
+window.WENDAO_BUILD='20260914-107';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -1595,6 +1595,21 @@ function renderBodyExperienceView(view,inner){
   }
   const target=5+Math.floor((state.bodyLevel+1)/20),requirement=bodyBreakthroughRequirement(),failures=state.bodyTrialFailures[String(state.bodyLevel+1)]||0,materialsReady=bodyBreakthroughMaterialsReady(requirement),ready=nextIsRealm&&bodyFoundationsReady()&&materialsReady;inner.innerHTML=`<section class="body-trial-card"><div class="trial-orb body-orb">守</div><h2>${nextIsRealm?`${bodyRealmName(state.bodyLevel+1)}・肉身試煉`:'尚未抵達大境界關口'}</h2><p>${nextIsRealm?`撐過 ${target} 回合即可破境。突破物資只在成功時扣除，失敗不消耗。`:'小層完成三項根基後，可在肉身頁直接突破。'}</p>${requirement?`<div class="body-trial-requirements"><b>三條產線皆需 ${requirement.areaLevel} 級</b><span>食物 ${formatLargeNumber(state.food)} / ${formatLargeNumber(requirement.food)}</span><span>木材 ${formatLargeNumber(state.wood)} / ${formatLargeNumber(requirement.wood)}</span><span>隕鐵 ${formatLargeNumber(state.meteorIron)} / ${formatLargeNumber(requirement.iron)}</span><small>已失敗 ${failures} 次${failures>=2&&!injury?'・下次無傷挑戰觸發適應保護，必定撐住':'・第三次無傷挑戰可觸發適應保護'}</small></div>`:''}<strong>${!bodyFoundationsReady()?'三項根基尚未完成':!materialsReady?'產線等級或儲備物資不足':'已具備試煉資格'}</strong><button id="startBodyTrial" class="jade-button" ${ready?'':'disabled'}>承受試煉</button></section>`;$('#startBodyTrial').onclick=startBodyTrial;
 }
+const renderBodyExperienceViewBase=renderBodyExperienceView;
+renderBodyExperienceView=function(view,inner){
+  renderBodyExperienceViewBase(view,inner);
+  if(view!=='training'||!inner)return;
+  const capacity=bodyNutritionCapacity(),current=Math.max(0,state.bodyNutrition||0),missing=Math.max(0,capacity-current);
+  const nutritionHint=inner.querySelector('.body-nutrition-card em'),nutritionButton=inner.querySelector('#prepareBodyNutrition');
+  if(nutritionHint)nutritionHint.textContent=`持有食物 ${formatLargeNumber(state.food)}・補滿尚需 ${formatLargeNumber(missing)}`;
+  if(nutritionButton){nutritionButton.textContent=missing>0?`進食補滿・需 ${formatLargeNumber(missing)}`:'腹中精氣已滿';nutritionButton.disabled=missing<=0||state.food<1}
+  const active=state.bodyTrainingMode,options=bodyTrainingOptions();
+  inner.querySelectorAll('[data-body-training]').forEach(button=>{const id=button.dataset.bodyTraining,card=button.closest('article');if(active){button.disabled=true;button.textContent=id===active?'修煉中':'其他鍛體進行中';card?.classList.toggle('active',id===active);card?.classList.toggle('locked',id!==active)}});
+  if(active){const activeButton=inner.querySelector(`[data-body-training="${active}"]`),card=activeButton?.closest('article'),option=options[active];if(card&&option){const remaining=Math.max(0,state.bodyTrainingNextAt-gameNow()),duration=option.minutes*60000,percent=Math.max(0,Math.min(100,(1-remaining/duration)*100));activeButton.insertAdjacentHTML('beforebegin',`<div class="body-training-timer"><span>本輪剩餘 <b data-body-training-time>${formatDuration(remaining)}</b></span><i><em data-body-training-bar style="width:${percent}%"></em></i></div>`)}}
+};
+function updateBodyTrainingTimer(){
+  const timer=document.querySelector('.body-training-timer'),active=state.bodyTrainingMode;if(!timer||!active)return;const option=bodyTrainingOptions()[active];if(!option)return;const remaining=Math.max(0,state.bodyTrainingNextAt-gameNow()),duration=option.minutes*60000,percent=Math.max(0,Math.min(100,(1-remaining/duration)*100)),text=timer.querySelector('[data-body-training-time]'),bar=timer.querySelector('[data-body-training-bar]');if(text)text.textContent=formatDuration(remaining);if(bar)bar.style.width=`${percent}%`;
+}
 function renderSwordPathSummary(){
   const inner=$('#experienceInner'),trialProgress=inner?.querySelector('.sword-resources span:nth-child(3) b');if(trialProgress)trialProgress.textContent=`${Math.min(state.swordTrialWins||0,swordTrialMaxStage)} / ${swordTrialMaxStage}`;if(!inner||!state.swordEmbryo||inner.querySelector('.sword-path-summary'))return;const counts=swordPathMarkCounts(),next=Math.max(10,Math.ceil(((state.swordLevel||0)+1)/10)*10),path=swordPathAlignment(next),need=swordPathExperienceNeed(next),total=Math.floor(state.righteousness+state.evilQi),anchor=inner.querySelector('.sword-dashboard,.sword-trial-card');if(!anchor)return;
   anchor.insertAdjacentHTML(anchor.classList.contains('sword-dashboard')?'afterend':'beforebegin',`<section class="sword-path-summary path-${path}"><div><small>當前劍格</small><b>${swordPathTitle()}</b><span>天罡 ${counts.righteous}・血煞 ${counts.evil}・兩儀 ${counts.balance}</span></div><div><small>下次大境界預示</small><b>${swordPaths[path].name}</b><span>正氣 ${formatLargeNumber(state.righteousness)}・邪氣 ${formatLargeNumber(state.evilQi)}・閱歷 ${formatLargeNumber(total)} / ${formatLargeNumber(need)}</span></div><p>${swordPaths[path].description}</p></section>`);
@@ -2367,6 +2382,7 @@ function finishBattle(won,reason){
 }
 function closeBattle(){const npcId=battle?.enemy?.npc?.id,mode=battle?.mode,won=!!battle?.won,immortalSource=battle?.immortalSource,arena=$('.battle-arena');clearTimeout(battleTimer);clearSwordTrialAdvance();battle=null;$('#battleModal').classList.add('hidden');arena?.style.removeProperty('background-image');arena?.style.removeProperty('background-position');if(mode==='ascension-delusion'||mode==='ascension-road-end'){openAscensionAftermath(mode,won);return}if(mode==='immortal-sentinel'){resumeWorldBgm();immortalSource==='expedition'?renderImmortalExpedition():renderImmortalDomain();return}startPathBgm();if(currentFeature==='sect'&&npcId!=null){const index=sectNpcs().findIndex(n=>n.id===npcId);renderSectPanel('npcs');if(index>=0)renderNpcDetail(index)}else if(currentFeature==='experience'&&mode==='swordTrial')renderExperiencePanel('trial');else if(currentFeature==='swordPrimary'&&mode==='swordTrial')renderPrimarySwordPanel('trial');else if(currentFeature==='experience'&&mode==='bodyTrial')renderExperiencePanel('bodyTrial');else if(currentFeature==='bodyPrimary'&&mode==='bodyTrial')renderPrimaryBodyPanel('bodyTrial');else if(currentFeature==='mainline'&&mode==='mainline')renderMainlinePage()}
 function updatePracticeTimers(){
+  updateBodyTrainingTimer();
   if(currentFeature!=='sect'||currentSectView!=='practice')return;
   for(const [key,prefix] of [['practiceBuff','practice'],['transmissionBuff','transmission']]){const bar=$(`#${prefix}TimerBar`),text=$(`#${prefix}TimerText`);if(!bar||!text)continue;const active=buffActive(key);bar.style.width=`${buffPercent(key)}%`;text.textContent=active?buffClock(key):'未開啟';if(!active&&text.closest('.buff-timer')?.classList.contains('active')){renderSectView('practice');render();break}}
 }
@@ -2543,7 +2559,8 @@ function runSettlementTick(ticks=1){
     }
   }
   runCaveFacilities(ticks);
-  processBodyTrainingCycles();
+  const priorBodyMode=state.bodyTrainingMode,bodyCycles=processBodyTrainingCycles();
+  if((bodyCycles||priorBodyMode!==state.bodyTrainingMode)&&document.querySelector('.body-training-grid'))renderBodyDestination('training');
 }
 
 const elementData = {
