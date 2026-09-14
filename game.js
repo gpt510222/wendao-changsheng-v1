@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260913-101';
+window.WENDAO_BUILD='20260914-103';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -3056,7 +3056,7 @@ function renderAscensionEntrances(){const a=normalizeAscension(),eligible=ascens
 let realmSwitching=false;
 let immortalArrivalPending=false;
 let immortalArrivalTimer=0;
-let realmSwipeStart=null;
+let realmSwipeStart=null,realmWheelTotal=0,realmWheelLastAt=0,realmWheelCooldownUntil=0;
 function realmTransitionScene(path,label){return `<section class="realm-transition-scene" style="background-image:url('${path}')" aria-label="${label}"></section>`}
 function playImmortalArrivalStory(){
   const a=normalizeAscension();if(!a.ascended||a.currentRealm!=='immortal'||a.immortalArrivalStoryVersion>=1){immortalArrivalPending=false;return}
@@ -3096,6 +3096,7 @@ function bindRealmSwipe(){
   screen.addEventListener('touchstart',event=>{const touch=event.touches[0];realmSwipeStart=event.touches.length===1&&touch&&realmSwipeAllowed(event.target)?{x:touch.clientX,y:touch.clientY,time:performance.now()}:null},{passive:true});
   screen.addEventListener('touchend',event=>{const start=realmSwipeStart,touch=event.changedTouches[0];realmSwipeStart=null;if(!start||!touch||!realmSwipeAllowed(event.target)||performance.now()-start.time>1000)return;const dx=touch.clientX-start.x,dy=touch.clientY-start.y;if(Math.abs(dy)<70||Math.abs(dy)<Math.abs(dx)*1.35)return;const immortal=normalizeAscension().currentRealm==='immortal';if(immortal&&dy>0||!immortal&&dy<0){event.preventDefault();switchWorldRealm()}},{passive:false});
   screen.addEventListener('touchcancel',()=>{realmSwipeStart=null},{passive:true});
+  screen.addEventListener('wheel',event=>{const now=performance.now();if(!matchMedia('(hover:hover) and (pointer:fine)').matches||event.ctrlKey||!realmSwipeAllowed(event.target)||now<realmWheelCooldownUntil||Math.abs(event.deltaY)<=Math.abs(event.deltaX)*1.2){realmWheelTotal=0;return}if(now-realmWheelLastAt>350||realmWheelTotal&&Math.sign(realmWheelTotal)!==Math.sign(event.deltaY))realmWheelTotal=0;realmWheelLastAt=now;realmWheelTotal+=event.deltaY;if(Math.abs(realmWheelTotal)<160)return;const immortal=normalizeAscension().currentRealm==='immortal',direction=Math.sign(realmWheelTotal);realmWheelTotal=0;if(immortal&&direction>0||!immortal&&direction<0){event.preventDefault();realmWheelCooldownUntil=now+1400;switchWorldRealm()}},{passive:false});
 }
 function openAscensionRoad(){if(!ascensionEligible())return toast('需通關九鎖封天第18關，並達遊穹／劍域一層，或無漏金身一階');const modal=ensureAscensionModal();modal.classList.add('show');renderAscensionRoad()}
 function renderAscensionRoad(){const a=normalizeAscension(),content=$('#ascensionContent');if(a.pendingReward){renderAscensionAllocation(a.pendingReward);return}const stages=[['序章｜天路將起',a.prologueCompleted,()=>openAscensionPrologue()],['問心陣',a.heartTrialCompleted,()=>openHeartTrial()],['照妄陣',a.delusionTrialCompleted,()=>openDelusionTrial()],['天路盡頭',a.roadEndCompleted,()=>openRoadEnd()]],unlocked=[true,a.prologueCompleted,a.heartTrialCompleted&&a.heartRewardAllocated,a.delusionTrialCompleted&&a.delusionRewardAllocated];content.innerHTML=`<header class="ascension-heading"><small>飛升・闖天路${a.ascended?'・重溫':''}</small><h2>${a.route==='none'?'凡間的路，尚未走完':ascensionRouteMeta[a.route].name}</h2><p>${a.ascended?'已開放無限重複挑戰；重溫不會再次取得屬性、稱號或飛升順位。':'九鎖已解，門仍未開。問心、照妄，而後以此身承擔自己的選擇。'}</p></header><div class="ascension-stage-grid">${stages.map((s,i)=>`<button data-asc-stage="${i}" ${!unlocked[i]||s[1]&&!a.ascended?'disabled':''}><i>${s[1]?'✓':i+1}</i><b>${s[0]}</b><small>${s[1]?(a.ascended?'已通關・可重複挑戰':'已通關・不可重入'):unlocked[i]?'可進入':'尚未解鎖'}</small></button>`).join('')}</div>`;content.querySelectorAll('[data-asc-stage]').forEach(button=>button.onclick=stages[+button.dataset.ascStage][2])}
