@@ -89,7 +89,10 @@ begin
  from (select user_id,row_number() over(order by score desc,wins desc,reached_at asc) rn
        from private.arena_canonical(p_channel) where (wins+losses)>0) ranked
  where rn<=50 on conflict do nothing;
- update public.arena_profiles set score=1000,wins=0,losses=0,reached_at=now(),
+ -- Keep every valid profile on the new weekly board.  Give tied 1000-point
+ -- profiles a one-time random, stable order instead of hiding the board.
+ update public.arena_profiles set score=1000,wins=0,losses=0,
+   reached_at=now()+(random()*interval '7 days'),
    snapshot=jsonb_set(snapshot,'{week_start}',to_jsonb(current_week::text)),updated_at=now()
  where channel=$1;
 end $$;
@@ -213,7 +216,7 @@ begin
  select * into dayrow from public.arena_daily where user_id=uid and channel=p_channel and play_date=d;
  select ranked.rn into own_rank from (
   select row_number() over(order by c.score desc,c.wins desc,c.reached_at asc,c.user_id) rn,c.player_name
-  from private.arena_canonical(p_channel) c where c.wins+c.losses>0
+  from private.arena_canonical(p_channel) c
  ) ranked where lower(trim(ranked.player_name))=lower(trim(p.player_name));
  return jsonb_build_object('score',coalesce(p.score,1000),'wins',coalesce(p.wins,0),'losses',coalesce(p.losses,0),'rank',own_rank,
  'free_remaining',greatest(0,10-dayrow.free_used),'bought_available',dayrow.bought_available,'stone_bought',dayrow.stone_bought,'jade_bought',dayrow.jade_bought);
@@ -222,7 +225,7 @@ end $$;
 create or replace function public.arena_rankings(p_channel text)
 returns table(rank bigint,player_name text,score int,wins int,losses int) language sql security definer set search_path='' as $$
  select * from (select row_number() over(order by p.score desc,p.wins desc,p.reached_at asc,p.user_id) rank,p.player_name,p.score,p.wins,p.losses
- from private.arena_canonical(p_channel) p where (p.wins+p.losses)>0) r where r.rank<=50
+ from private.arena_canonical(p_channel) p) r where r.rank<=50
 $$;
 create or replace function public.arena_history(p_channel text)
 returns table(id uuid,challenger_name text,defender_name text,winner_id uuid,challenger_delta int,defender_delta int,created_at timestamptz,was_challenger boolean)
