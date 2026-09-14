@@ -2435,7 +2435,7 @@ function caveCoreUpgradeCost(){const level=state.caveCoreLevel;return {stone:Mat
 function caveFacilityUpgradeCost(key){const level=state[caveFacilities[key].level],weight={cultivation:1,sword:1.15,body:1.1}[key];return {stone:Math.floor(520*weight*Math.pow(level,1.65)),wood:Math.floor(240*weight*Math.pow(level,1.5)),iron:Math.floor(100*weight*Math.pow(level,1.45))}}
 function assignedChildren(){return Object.values(caveAreas).reduce((sum,a)=>sum+state[a.worker],0)}
 function availableChildren(){return Math.max(0,state.daoChildTotal-assignedChildren())}
-function daoChildCost(){const n=Math.max(1,(state.daoChildBought||0)+1);return Math.ceil(80+35*n+2.5*n*n+.02*n*n*n)}
+function daoChildCost(){const n=Math.max(1,(state.daoChildBought||0)+1);return Math.ceil(100+30*n+3*n*n)}
 function renderCavePanel(view='dwelling',preserveScroll=false){
   currentCaveView=view;
   const description=$('#featureDescription'),savedScrollTop=preserveScroll?description.scrollTop:0,savedScrollLeft=preserveScroll?description.scrollLeft:0,savedTabScroll=preserveScroll?description.querySelector('.cave-tabs')?.scrollLeft||0:0;
