@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260914-117';
+window.WENDAO_BUILD='20260914-119';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -1064,7 +1064,7 @@ function auraInfusionCost(){return Math.max(1000,Math.floor(auraCapacity()*.2))}
 function beginAuraInfusion(path){const labels={qi:'練氣',sword:'淬劍',body:'煉體'},effects={qi:'修為獲取 +12%',sword:'劍元獲取 +12%',body:'每輪筋骨、氣血、臟腑根基收益 +12%'};if(!labels[path])return;if(path==='sword'&&!state.swordPathOpened||path==='body'&&!state.bodyPathOpened)return toast(`尚未開啟${labels[path]}之路`);const cost=auraInfusionCost();if(state.aura<cost)return toast(`靈氣不足・需要 ${formatLargeNumber(cost)}`);state.aura-=cost;state.auraInfusionPath=path;state.auraInfusionUntil=gameNow()+4*60*60*1000;toast(`靈氣灌體・${effects[path]}・持續4小時`);renderSpiritRootView('pool');render();save()}
 function spiritRootLevelGain(level){return level<1||level>200?0:Math.round((.5+2*(level-1)/199)*10)/10}
 function spiritRootBonus(level){let total=0;for(let rank=1;rank<=Math.min(200,Math.max(0,Math.floor(level||0)));rank++)total+=spiritRootLevelGain(rank);return Math.round(total*10)/10}
-function spiritRootReq(level) { return Math.floor(500*Math.pow(1.38,Math.max(0,level-1))); }
+function spiritRootReq(level) { const current=Math.max(0,Math.floor(Number(level)||0));return 500+250*current*current; }
 function spiritPoolUpgradeCost(level=state.spiritPoolLevel||1){const next=Math.max(2,Math.floor(level)+1),base=Math.ceil(10*Math.pow(next+3,1.55));return {wood:Math.ceil(base*1.15),iron:Math.ceil(base*.55)}}
 function poolWoodCost() { return spiritPoolUpgradeCost().wood; }
 function poolIronCost() { return spiritPoolUpgradeCost().iron; }
