@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260914-115';
+window.WENDAO_BUILD='20260914-117';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -919,8 +919,9 @@ function swordRealmEffectText(level=state.swordLevel||0){const profile=swordReal
 function artBaseEffect(art){return Math.round(artTierMax[art.tier-1]*(art.level/10))}
 function legacyArtRootEffect(art){return Math.round(Math.max(0,Number(state[`${art.element}Art`])||0)*art.tier*art.level)}
 function artRootEffect(art){
-  const curveEffect=Math.round(artBaseEffect(art)*spiritRootBonus(state[`${art.element}Root`]||0)/100);
-  return Math.max(curveEffect,legacyArtRootEffect(art));
+  const rootLevel=Math.max(0,Number(state[`${art.element}Root`])||0),legacyLevels=Math.max(0,Number(state[`${art.element}Art`])||0)/2,legacyBaselineLevel=legacyLevels>0?Math.min(rootLevel,Math.floor(legacyLevels)+1):0;
+  const curveEffect=Math.round(artBaseEffect(art)*spiritRootBonus(rootLevel)/100),baselineCurveEffect=Math.round(artBaseEffect(art)*spiritRootBonus(legacyBaselineLevel)/100),legacyEffect=legacyArtRootEffect(art);
+  return Math.max(legacyEffect,baselineCurveEffect)+Math.max(0,curveEffect-baselineCurveEffect);
 }
 function artDirectEffect(art){return artBaseEffect(art)+artRootEffect(art)}
 function equippedElementBonus(element){
@@ -2596,7 +2597,7 @@ function upgradeSpiritRoot(key) {
   const e=elementData[key],level=state[e.root],cost=spiritRootReq(level);
   if(level>=200)return toast(`${e.label}系靈根已達天道・10階`);
   if(state.aura<cost)return toast(`尚缺 ${formatLargeNumber(cost-state.aura)} 靈氣`);
-  state.aura-=cost;state[e.root]++;toast(`${e.label}系靈根提升至${rootRank(state[e.root])}・白值 +${spiritRootBonus(state[e.root]).toFixed(1)}%`);renderSpiritRootView('root');save();
+  state.aura-=cost;state[e.root]++;toast(`${e.label}系靈根提升至${rootRank(state[e.root])}・白值 +${spiritRootBonus(state[e.root]).toFixed(1)}%`);renderSpiritRootView('root');render();save();
 }
 function upgradeSpiritPool() {
   const woodCost=poolWoodCost(),ironCost=poolIronCost();
