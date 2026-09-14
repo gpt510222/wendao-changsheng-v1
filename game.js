@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260914-107';
+window.WENDAO_BUILD='20260914-111';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -2621,6 +2621,8 @@ function canStoreBagCounts(changes){const totals=new Map();changes.forEach(([cou
 function bagStorableAmount(key){const item=itemCatalog[key];if(!item)return 0;const current=Math.max(0,Math.floor(Number(state[item.count])||0)),remainder=current%bagStackLimit,partialSpace=remainder?bagStackLimit-remainder:0,freeSlots=Math.max(0,bagCapacity()-bagUsedSlots());return partialSpace+freeSlots*bagStackLimit}
 function canStoreItem(key,amount=1){const item=itemCatalog[key];return !!item&&canStoreBagCounts([[item.count,amount]])}
 let bagUpgradeDetailsOpen=false;
+let currentBagCategory='all';
+const bagCategoryTabs=[['all','全部',null],['resource','資源',0],['consumable','丹釀',3],['technique','功法',2],['equipment','裝備',1],['material','素材',4],['special','其他',5]];
 function upgradeBag(){
   if(state.bagRank>=bagMaxRank)return;const cost=bagUpgradeCost();
   if((state.mendingSilk||0)<cost)return toast(`尚缺 ${formatLargeNumber(cost-(state.mendingSilk||0))} 補天絲`);
@@ -2657,11 +2659,12 @@ function renderBagView(view) {
   const inner=$('#bagInner'); if(!inner)return;
   inner.classList.toggle('nested-subtabs',view==='character'||view==='wardrobe');
   if(view==='bag') {
-    const items=syncBagItemOrder(Object.entries(itemCatalog).filter(([,item])=>(state[item.count]||0)>0)),capacity=bagCapacity(),used=bagUsedSlots(),cost=bagUpgradeCost();
+    const allItems=syncBagItemOrder(Object.entries(itemCatalog).filter(([,item])=>(state[item.count]||0)>0)),selectedTab=bagCategoryTabs.find(([id])=>id===currentBagCategory)||bagCategoryTabs[0],selectedCategory=selectedTab[2],items=selectedCategory==null?allItems:allItems.filter(([key,item])=>bagItemSortProfile(key,item).category===selectedCategory),capacity=bagCapacity(),used=bagUsedSlots(),cost=bagUpgradeCost();
     const itemButtons=items.flatMap(([key,item])=>{const category=bagItemSortProfile(key,item).category,total=Math.max(0,Math.floor(Number(state[item.count])||0)),stacks=bagSlotsForAmount(total);return Array.from({length:stacks},(_,index)=>{const amount=Math.min(bagStackLimit,total-index*bagStackLimit);return `<button class="inventory-item" data-bag-item="${key}" data-bag-category="${category}" aria-label="${bagCategoryLabels[category]}・${item.name}・第${index+1}格・${amount}個"><img src="${item.image}" alt="${item.name}"><b>${formatLargeNumber(amount)}</b><small>${item.name}</small></button>`})}).join('');
-    const emptySlots=Array.from({length:Math.max(0,capacity-used)},()=>'<span></span>').join('');
-    inner.innerHTML=`<section class="bag-toolbar"><div><small>儲物袋品階</small><b>${bagRankNames[state.bagRank-1]}階</b><span>${used} / ${capacity} 格</span></div><div class="bag-toolbar-actions"><button id="openBagUpgradeBtn" ${state.bagRank>=bagMaxRank?'disabled':''}>${state.bagRank>=bagMaxRank?'已滿階':bagUpgradeDetailsOpen?'收起':'升階'}</button><button id="organizeBagBtn">整理</button></div></section>${bagUpgradeDetailsOpen&&state.bagRank<bagMaxRank?`<section class="bag-upgrade-details"><img src="assets/qstyle-v2/mending-silk-cutout.png" alt="補天絲"><span><small>補天絲</small><b>${formatLargeNumber(state.mendingSilk||0)} / ${formatLargeNumber(cost)}</b><em>升至${bagRankNames[state.bagRank]}階・容量增加 50 格</em></span><button id="confirmUpgradeBagBtn" ${(state.mendingSilk||0)>=cost?'':'disabled'}>確認升階</button></section>`:''}<div class="inventory-grid">${itemButtons}${emptySlots}</div><small class="empty-note">每格最多容納 9,999 個・${used?'點擊道具可查看詳細資訊':'目前儲物袋空空如也'}</small>`;
-    bindBagItemActivation(inner);$('#organizeBagBtn').onclick=organizeBag;$('#openBagUpgradeBtn').onclick=()=>{bagUpgradeDetailsOpen=!bagUpgradeDetailsOpen;renderBagView('bag')};if($('#confirmUpgradeBagBtn'))$('#confirmUpgradeBagBtn').onclick=upgradeBag;
+    const emptySlots=selectedCategory==null?Array.from({length:Math.max(0,capacity-used)},()=>'<span></span>').join(''):'';
+    const categoryTabs=`<nav class="bag-category-tabs" aria-label="儲物袋分類">${bagCategoryTabs.map(([id,label,category])=>{const count=category==null?used:allItems.filter(([key,item])=>bagItemSortProfile(key,item).category===category).reduce((sum,[,item])=>sum+bagSlotsForAmount(state[item.count]),0);return `<button data-bag-category-tab="${id}" class="${id===currentBagCategory?'active':''}">${label}<small>${count}</small></button>`}).join('')}</nav>`;
+    inner.innerHTML=`<section class="bag-toolbar"><div><small>儲物袋品階</small><b>${bagRankNames[state.bagRank-1]}階</b><span>${used} / ${capacity} 格</span></div><div class="bag-toolbar-actions"><button id="openBagUpgradeBtn" ${state.bagRank>=bagMaxRank?'disabled':''}>${state.bagRank>=bagMaxRank?'已滿階':bagUpgradeDetailsOpen?'收起':'升階'}</button><button id="organizeBagBtn">整理</button></div></section>${bagUpgradeDetailsOpen&&state.bagRank<bagMaxRank?`<section class="bag-upgrade-details"><img src="assets/qstyle-v2/mending-silk-cutout.png" alt="補天絲"><span><small>補天絲</small><b>${formatLargeNumber(state.mendingSilk||0)} / ${formatLargeNumber(cost)}</b><em>升至${bagRankNames[state.bagRank]}階・容量增加 50 格</em></span><button id="confirmUpgradeBagBtn" ${(state.mendingSilk||0)>=cost?'':'disabled'}>確認升階</button></section>`:''}${categoryTabs}${items.length?`<div class="inventory-grid">${itemButtons}${emptySlots}</div>`:`<div class="bag-category-empty">${selectedTab[1]}分類目前沒有道具</div>`}<small class="empty-note">每格最多容納 9,999 個・${used?'點擊道具可查看詳細資訊':'目前儲物袋空空如也'}</small>`;
+    bindBagItemActivation(inner);$$('[data-bag-category-tab]').forEach(button=>button.onclick=()=>{currentBagCategory=button.dataset.bagCategoryTab;renderBagView('bag')});$('#organizeBagBtn').onclick=organizeBag;$('#openBagUpgradeBtn').onclick=()=>{bagUpgradeDetailsOpen=!bagUpgradeDetailsOpen;renderBagView('bag')};if($('#confirmUpgradeBagBtn'))$('#confirmUpgradeBagBtn').onclick=upgradeBag;
     return;
   }
   if(view==='wardrobe'){renderWardrobeView(currentWardrobeView);return}
