@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260915-125';
+window.WENDAO_BUILD='20260915-127';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
@@ -3185,7 +3185,7 @@ $('#accountRecoveryConfirm').onclick=recoverAccount;
 $('#helpCloseBtn').onclick=()=>$('#helpModal').classList.add('hidden');
 const sideEntryButtons=[
   ...['mainlineButton','encounterButton','realmSwitchButton','artifactTombButton','ascensionButton'],
-  ...['marketButton','mailButton','wendaoArenaButton']
+  ...['marketButton','mailButton','wendaoArenaButton','cangjiButton']
 ].map(id=>$(`#${id}`)).filter(Boolean);
 function assignSideEntrySlot(button,slot){
   if(!button)return;
@@ -3203,8 +3203,8 @@ function syncSideEntrySlots(){
     .filter(button=>button&&!button.classList.contains('hidden'))
     .forEach((button,index)=>assignSideEntrySlot(button,leftOpenSlots[index]));
   const rightSlots=[1,2,3,4,5,6,7,8];
-  ['marketButton','mailButton','wendaoArenaButton'].forEach(id=>assignSideEntrySlot($(`#${id}`),0));
-  ['marketButton','mailButton','wendaoArenaButton']
+  ['marketButton','mailButton','wendaoArenaButton','cangjiButton'].forEach(id=>assignSideEntrySlot($(`#${id}`),0));
+  ['marketButton','mailButton','wendaoArenaButton','cangjiButton']
     .map(id=>$(`#${id}`))
     .filter(button=>button&&!button.classList.contains('hidden'))
     .forEach((button,index)=>assignSideEntrySlot(button,rightSlots[index]));
