@@ -130,6 +130,60 @@ begin
  return;
 end $$;
 
+create or replace function private.arena_validate_snapshot(p_snapshot jsonb)
+returns void language plpgsql immutable set search_path='' as $$
+declare
+  core jsonb; stats jsonb; progression jsonb; move jsonb;
+  root_bone numeric; true_qi numeric; physique numeric; agility numeric; spiritual_power numeric;
+  expected_power numeric; supplied_power numeric;
+  spirit_level int; sword_level int; body_level int;
+begin
+  if p_snapshot is null or jsonb_typeof(p_snapshot) is distinct from 'object' or pg_column_size(p_snapshot)>32768 then raise exception '問道臺快照格式不正確'; end if;
+  if p_snapshot->>'schema_version' is distinct from '3' then raise exception '請重新整理遊戲以更新問道臺'; end if;
+  core:=p_snapshot->'core'; stats:=p_snapshot->'stats'; progression:=p_snapshot->'progression';
+  if jsonb_typeof(core) is distinct from 'object' or jsonb_typeof(stats) is distinct from 'object' or jsonb_typeof(progression) is distinct from 'object' or jsonb_typeof(p_snapshot->'moves') is distinct from 'array' then raise exception '問道臺快照缺少必要資料'; end if;
+  if not (progression ?& array['spirit_level','sword_level','body_level'])
+    or not (core ?& array['trueQi','rootBone','physique','agility','spiritualPower'])
+    or not (stats ?& array['maxHp','attack','defense','evasion','accuracy','crit','qiAttack','bodyAttack'])
+    or not (p_snapshot ?& array['eligible','combat_power']) then raise exception '問道臺快照欄位不完整'; end if;
+  spirit_level:=(progression->>'spirit_level')::int; sword_level:=(progression->>'sword_level')::int; body_level:=(progression->>'body_level')::int;
+  if spirit_level not between 0 and 200 or sword_level not between 0 and 200 or body_level not between 0 and 200 then raise exception '修行境界超出允許範圍'; end if;
+  if (p_snapshot->>'eligible')::boolean is distinct from (spirit_level>=40 or sword_level>=40 or body_level>=16) then raise exception '問道臺資格資料不一致'; end if;
+  root_bone:=(core->>'rootBone')::numeric; true_qi:=(core->>'trueQi')::numeric; physique:=(core->>'physique')::numeric; agility:=(core->>'agility')::numeric; spiritual_power:=(core->>'spiritualPower')::numeric;
+  if root_bone not between 0 and 5000 or true_qi not between 0 and 5000 or physique not between 0 and 5000 or agility not between 0 and 5000 or spiritual_power not between 0 and 5000 then raise exception '角色屬性超出問道臺安全上限'; end if;
+  expected_power:=root_bone*10+true_qi*25+physique*20+agility*15+spiritual_power*30; supplied_power:=(p_snapshot->>'combat_power')::numeric;
+  if abs(supplied_power-expected_power)>2 then raise exception '戰力與核心屬性不一致'; end if;
+  if (stats->>'maxHp')::numeric not between 1 and root_bone*8+1000
+    or (stats->>'attack')::numeric not between 1 and true_qi*15+200
+    or (stats->>'qiAttack')::numeric not between 1 and true_qi*15+200
+    or (stats->>'bodyAttack')::numeric not between 1 and (root_bone*2+physique*3)*3+200
+    or (stats->>'defense')::numeric not between 0 and physique*40+200
+    or (stats->>'evasion')::numeric not between 0 and agility*6+100
+    or (stats->>'accuracy')::numeric not between 0 and spiritual_power*6+100
+    or (stats->>'crit')::numeric not between 0 and .6
+    or coalesce((stats->>'damageReduction')::numeric,0) not between -.5 and .6 then raise exception '衍生戰鬥屬性不合理'; end if;
+  if jsonb_array_length(p_snapshot->'moves') not between 1 and 2 then raise exception '請先配置招式'; end if;
+  for move in select value from jsonb_array_elements(p_snapshot->'moves') loop
+    if jsonb_typeof(move) is distinct from 'object'
+      or coalesce((move->>'hits')::numeric,1) not between 1 and 10
+      or coalesce((move->>'basePercent')::numeric,0) not between 0 and 1000
+      or coalesce((move->>'min')::numeric,0) not between 0 and 10
+      or coalesce((move->>'max')::numeric,0) not between 0 and 10
+      or coalesce((move->>'balanceMultiplier')::numeric,1) not between 0 and 2
+      or coalesce((move->>'damageMultiplier')::numeric,1) not between 0 and 5
+      or coalesce((move->>'attributeDamage')::numeric,0) not between 0 and 15000
+      or coalesce((move->>'accuracyBonus')::numeric,0) not between 0 and 2
+      or coalesce((move->>'armorPierce')::numeric,0) not between 0 and .8
+      or coalesce((move->>'lifeSteal')::numeric,0) not between 0 and 1
+      or coalesce((move->>'guardBonus')::numeric,0) not between 0 and .75
+      or coalesce((move->>'repeatChance')::numeric,0) not between 0 and 1
+      or coalesce((move->>'repeatScale')::numeric,0) not between 0 and 1 then raise exception '招式參數超出問道臺允許範圍'; end if;
+  end loop;
+exception when invalid_text_representation or numeric_value_out_of_range then
+  raise exception '問道臺快照包含無效數值';
+end $$;
+revoke all on function private.arena_validate_snapshot(jsonb) from public,anon,authenticated;
+
 create or replace function public.arena_sync_profile(p_channel text,p_name text,p_snapshot jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare uid uuid:=(select auth.uid()); result jsonb; wk date:=private.arena_week_start();
@@ -137,20 +191,14 @@ begin
  if uid is null then raise exception 'authentication required'; end if;
  if p_channel not in ('formal','test') then raise exception 'invalid channel'; end if;
  perform private.arena_rollover(p_channel);
- if p_snapshot->>'schema_version' is distinct from '2' or not(p_snapshot ? 'core') then
-   raise exception '請重新整理遊戲以更新問道臺';
- end if;
- if jsonb_array_length(p_snapshot->'moves') not between 1 and 2 then raise exception '請先配置招式'; end if;
- if not (p_snapshot->'core' ?& array['trueQi','rootBone','physique','agility','spiritualPower']) then raise exception '戰鬥屬性不完整'; end if;
- if not (p_snapshot->'stats' ?& array['maxHp','attack','defense','evasion','accuracy','crit','qiAttack','bodyAttack']) then raise exception '戰鬥屬性不完整'; end if;
- if (p_snapshot#>>'{stats,maxHp}')::numeric<=0 or (p_snapshot#>>'{stats,crit}')::numeric not between 0 and 1 then raise exception '戰鬥屬性不正確'; end if;
+ perform private.arena_validate_snapshot(p_snapshot);
  p_snapshot:=p_snapshot||jsonb_build_object('week_start',wk::text,'captured_at',floor(extract(epoch from now())*1000));
  insert into private.arena_name_owners(channel,normalized_name,user_id)
  values(p_channel,lower(trim(left(coalesce(nullif(trim(p_name),''),'無名修士'),20))),uid)
  on conflict(channel,normalized_name) do nothing;
  -- Five-minute snapshots are immutable between refreshes.
  if exists(select 1 from public.arena_profiles p where p.user_id=uid and p.channel=p_channel
-   and p.snapshot->>'schema_version'='2' and (p.snapshot->>'captured_at')::numeric>extract(epoch from now()-interval '5 minutes')*1000) then
+   and p.snapshot->>'schema_version'='3' and (p.snapshot->>'captured_at')::numeric>extract(epoch from now()-interval '5 minutes')*1000) then
    select jsonb_build_object('score',p.score) into result from public.arena_profiles p where p.user_id=uid and p.channel=p_channel;
    return result;
  end if;
@@ -169,7 +217,7 @@ begin
  perform private.arena_seed_ranked_profiles(p_channel);
  select p.score into my_score from public.arena_profiles p where p.user_id=uid and p.channel=$1;
  return query select p.user_id,p.player_name,p.score,p.snapshot from private.arena_canonical(p_channel) p
- where p.user_id<>uid and p.snapshot->>'schema_version'='2' and p.snapshot->>'eligible'='true'
+ where p.user_id<>uid and p.snapshot->>'schema_version'='3' and p.snapshot->>'eligible'='true'
  and lower(trim(p.player_name))<>(select lower(trim(me.player_name)) from public.arena_profiles me where me.user_id=uid and me.channel=p_channel)
  order by abs(p.score-coalesce(my_score,1000)),random() limit 30;
 end $$;
@@ -201,7 +249,7 @@ begin
  select * into me from public.arena_profiles where user_id=uid and channel=$1;
  select * into foe from public.arena_profiles where user_id=p_defender and channel=$1;
  if me.user_id is null or foe.user_id is null then raise exception 'opponent unavailable'; end if;
- if me.snapshot->>'schema_version' is distinct from '2' or foe.snapshot->>'schema_version' is distinct from '2' then raise exception '對手尚未更新戰鬥屬性，請刷新名單'; end if;
+ if me.snapshot->>'schema_version' is distinct from '3' or foe.snapshot->>'schema_version' is distinct from '3' then raise exception '對手尚未更新戰鬥屬性，請刷新名單'; end if;
  if me.snapshot->>'eligible'<>'true' or foe.snapshot->>'eligible'<>'true' then raise exception '境界尚未達到問道臺門檻'; end if;
  if not exists(select 1 from private.arena_canonical(p_channel) p where p.user_id=p_defender) or lower(trim(me.player_name))=lower(trim(foe.player_name)) then raise exception '舊存檔不列入挑戰，請刷新名單'; end if;
  insert into public.arena_daily(user_id,channel,play_date) values(uid,p_channel,d) on conflict do nothing;
@@ -216,23 +264,29 @@ end $$;
 
 create or replace function public.arena_finish_match(p_match uuid,p_won boolean)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare uid uuid:=(select auth.uid()); m public.arena_matches; a public.arena_profiles; d public.arena_profiles; expected numeric; delta int;
+declare uid uuid:=(select auth.uid()); m public.arena_matches; a public.arena_profiles; d public.arena_profiles; expected numeric; delta int; server_won boolean; attacker_power numeric; defender_power numeric; win_chance numeric;
 begin
  select * into m from public.arena_matches where id=p_match and challenger_id=uid for update;
  if m.id is null or m.status<>'pending' then raise exception 'invalid match'; end if;
  if m.created_at<now()-interval '30 minutes' then raise exception 'match expired'; end if;
+ if m.created_at>now()-interval '3 seconds' then raise exception '戰鬥尚未完成'; end if;
+ perform private.arena_validate_snapshot(m.challenger_snapshot);
+ perform private.arena_validate_snapshot(m.defender_snapshot);
  select * into a from public.arena_profiles where user_id=m.challenger_id and channel=m.channel for update;
  select * into d from public.arena_profiles where user_id=m.defender_id and channel=m.channel for update;
+ attacker_power:=(m.challenger_snapshot->>'combat_power')::numeric; defender_power:=(m.defender_snapshot->>'combat_power')::numeric;
+ win_chance:=greatest(.1,least(.9,attacker_power/greatest(1,attacker_power+defender_power)));
+ server_won:=random()<win_chance;
  expected:=1/(1+power(10,(d.score-a.score)/400.0));
- delta:=round(32*((case when p_won then 1 else 0 end)-expected));
- if p_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
- update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(p_won)::int,losses=losses+((not p_won))::int,
+ delta:=round(32*((case when server_won then 1 else 0 end)-expected));
+ if server_won then delta:=greatest(5,least(30,delta)); else delta:=-greatest(5,least(30,abs(delta))); end if;
+ update public.arena_profiles set score=greatest(0,score+delta),wins=wins+(server_won)::int,losses=losses+((not server_won))::int,
  reached_at=case when delta>0 then now() else reached_at end,updated_at=now() where user_id=m.challenger_id and channel=m.channel;
- update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not p_won))::int,losses=losses+(p_won)::int,
+ update public.arena_profiles set score=greatest(0,score-delta),wins=wins+((not server_won))::int,losses=losses+(server_won)::int,
  reached_at=case when delta<0 then now() else reached_at end,updated_at=now() where user_id=m.defender_id and channel=m.channel;
- update public.arena_matches set status='finished',winner_id=case when p_won then challenger_id else defender_id end,
+ update public.arena_matches set status='finished',winner_id=case when server_won then challenger_id else defender_id end,
  challenger_delta=delta,defender_delta=-delta,finished_at=now() where id=p_match;
- return jsonb_build_object('delta',delta,'score',greatest(0,a.score+delta));
+ return jsonb_build_object('won',server_won,'delta',delta,'score',greatest(0,a.score+delta));
 end $$;
 
 create or replace function public.arena_status(p_channel text)
