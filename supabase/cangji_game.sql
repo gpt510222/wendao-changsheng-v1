@@ -112,6 +112,22 @@ begin
  return jsonb_build_object('id',g.id,'refund',g.wager);
 end $$;
 
-revoke execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid) from public,anon;
-grant execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid) to authenticated;
+create or replace function public.cangji_claim_all_games(p_channel text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare uid uuid:=(select auth.uid()); total_payout bigint:=0; claimed_count integer:=0;
+begin
+ if uid is null then raise exception '請重新登入後再領取'; end if;
+ if p_channel not in ('formal','test') then raise exception '藏機局版本不正確'; end if;
+ with claimed as (
+   update public.cangji_games
+   set creator_claimed=true
+   where creator_id=uid and channel=p_channel and status='resolved' and creator_claimed=false
+   returning creator_payout
+ )
+ select coalesce(sum(creator_payout),0),count(*) into total_payout,claimed_count from claimed;
+ return jsonb_build_object('payout',total_payout,'count',claimed_count);
+end $$;
+
+revoke execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid),public.cangji_claim_all_games(text) from public,anon;
+grant execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid),public.cangji_claim_all_games(text) to authenticated;
 revoke all on function private.cangji_creator_wins(text,text) from public,anon,authenticated;
