@@ -1,4 +1,5 @@
 dist/
+node_modules/
 # Early partner-art drafts; production uses the explicit dialogue/full variants.
 assets/qstyle-v2/partner/partner-female-v1.png
 assets/qstyle-v2/partner/partner-male-v1.png
