@@ -518,6 +518,7 @@ let marketFloorNoticeTimer=null,lastScriptureDayKey='',marketPurchaseOffer=null,
 let bgmTheme=null,battle=null,battleTimer=null,swordTrialAdvanceTimer=null,swordTrialCountdownTimer=null,pauseStartedAt=null,sessionOnline=false,confirmResolver=null,prologueTimer=null,offlineRewardTimer=null,tribulationPillUseCount=0,tribulationLocked=false,tribulationTimers=[];
 let itemModalKey=null,itemModalQuantity=1,sellItemKey=null,sellItemQuantity=1;
 let identityChangeItemKey=null;
+let serverPlayerStateRevision=0;
 let swordPathChoiceConfirming=false;
 let clockEpoch=Date.now(),clockPerf=performance.now(),trustedClockReady=location.protocol==='file:',clockSyncPromise=null;
 
@@ -951,6 +952,8 @@ async function ensureLeaderboardSession(forceRefresh=false){
   localStorage.removeItem(leaderboardConfig.sessionKey);
   const response=await fetch(`${leaderboardConfig.url}/auth/v1/signup`,{method:'POST',headers:leaderboardHeaders(),body:'{}'});if(!response.ok)throw new Error('anonymous sign-in failed');return storeLeaderboardSession(await response.json());
 }
+async function playerStateRpc(name,body={},retryAuth=true){let session=await ensureLeaderboardSession(),response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)});if(response.status===401&&retryAuth){await ensureLeaderboardSession(true);return playerStateRpc(name,body,false)}const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'伺服器角色狀態暫時無法使用');return data}
+async function connectServerPlayerState(){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';const record=await playerStateRpc('player_state_bootstrap',{p_channel:channel,p_legacy_state:recoverySaveData()});serverPlayerStateRevision=Number(record?.revision)||0;if(!serverPlayerStateRevision)throw new Error('伺服器角色狀態未建立');const settled=await playerStateRpc('player_state_claim_elapsed',{p_channel:channel,p_expected_revision:serverPlayerStateRevision,p_request_id:crypto.randomUUID()});serverPlayerStateRevision=Number(settled?.revision)||serverPlayerStateRevision;return settled}
 function publicPlayerUid(userId){return userId?`WD1-${String(userId).toUpperCase()}`:''}
 async function registerFormalPlayer(session,retryAuth=true){
   if(!session?.user?.id)return '';
@@ -1500,7 +1503,7 @@ function scheduleOfflineRewards(before,seconds){
   clearTimeout(offlineRewardTimer);offlineRewardTimer=setTimeout(()=>{offlineRewardTimer=null;if(sessionOnline)showOfflineRewards(before,seconds)},180);
 }
 async function startGame() {
-  if(sessionOnline)return;finishPause();sessionOnline=true;
+  if(sessionOnline)return;finishPause();let serverSettlement;try{serverSettlement=await connectServerPlayerState();sessionOnline=true}catch(error){sessionOnline=false;show('#titleScreen');$('#titleHint').textContent='需要連線伺服器才能進入遊戲';toast(error.message);return}
   await verifyAccountOwnership();if(suppressSave)return;
   const savedLast=state.lastSave||0,savedTrusted=state.lastTrustedTime||0;
   trustedClockReady=location.protocol==='file:';
@@ -1519,7 +1522,7 @@ async function startGame() {
   $('#gameScreen').classList.remove('feature-open');
   $$('.feature-tab').forEach(x=>x.classList.remove('active'));
   applyCharacterVisual();
-  const away=clockOkay&&!clockRollback?Math.max(0,Math.floor((now-savedLast)/5000)):0;
+  const away=Math.max(0,Math.floor((Number(serverSettlement?.elapsed_seconds)||0)/5));
   if(away>0&&state.cultivationAwakened) { const gain=state.spiritPathOpened?offlineCultivationGain(savedLast,now):0,swordGain=offlineSwordEssenceGain(away,savedLast,now);addAura(away*auraRate());state.swordEssence+=toBigInt(swordGain);runSettlementTick(away);if(state.spiritPathOpened)addCultivation(gain,true);scheduleOfflineRewards(offlineBefore,away*5); }
   else if(clockRollback)setTimeout(()=>toast('偵測到時間異常，本次不結算離線收益'),250);
   else if(!clockOkay&&location.protocol!=='file:')setTimeout(()=>toast('無法取得可信時間，已暫停離線與每日結算'),250);
