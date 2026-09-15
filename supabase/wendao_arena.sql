@@ -66,12 +66,33 @@ alter table public.arena_matches enable row level security;
 alter table public.arena_rewards enable row level security;
 revoke all on public.arena_profiles,public.arena_daily,public.arena_matches,public.arena_rewards from anon,authenticated;
 
+create table if not exists private.arena_name_owners (
+  channel text not null,
+  normalized_name text not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  claimed_at timestamptz not null default now(),
+  primary key(channel,normalized_name)
+);
+create table if not exists private.arena_week_state (
+  channel text primary key,
+  week_start date not null
+);
+alter table private.arena_name_owners enable row level security;
+alter table private.arena_week_state enable row level security;
+revoke all on private.arena_name_owners,private.arena_week_state from public,anon,authenticated;
+
+insert into private.arena_name_owners(channel,normalized_name,user_id)
+select channel,lower(trim(player_name)),user_id from (
+ select p.*,row_number() over(partition by channel,lower(trim(player_name)) order by score desc,updated_at desc,user_id) rn
+ from public.arena_profiles p
+) ranked where rn=1
+on conflict(channel,normalized_name) do nothing;
+
 create or replace function private.arena_canonical(p_channel text)
 returns setof public.arena_profiles language sql stable security definer set search_path='' as $$
- select distinct on (lower(trim(p.player_name))) p.* from public.arena_profiles p
+ select p.* from public.arena_profiles p
+ join private.arena_name_owners o on o.channel=p.channel and o.normalized_name=lower(trim(p.player_name)) and o.user_id=p.user_id
  where p.channel=$1
- order by lower(trim(p.player_name)),coalesce((p.snapshot->>'schema_version')='2',false) desc,
- coalesce((p.snapshot->>'captured_at')::numeric,0) desc,p.updated_at desc,p.user_id
 $$;
 
 create or replace function private.arena_week_start() returns date language sql stable set search_path='' as $$
@@ -81,8 +102,12 @@ create or replace function private.arena_rollover(p_channel text) returns void l
 declare current_week date:=private.arena_week_start(); old_week date;
 begin
  perform pg_advisory_xact_lock(hashtext('wendao-arena-'||p_channel));
- select min((snapshot->>'week_start')::date) into old_week from public.arena_profiles where channel=$1 and snapshot ? 'week_start';
- if old_week is null or old_week>=current_week then return; end if;
+ select week_start into old_week from private.arena_week_state where channel=p_channel for update;
+ if old_week is null then
+   insert into private.arena_week_state(channel,week_start) values(p_channel,current_week) on conflict(channel) do nothing;
+   return;
+ end if;
+ if old_week>=current_week then return; end if;
  insert into public.arena_rewards(user_id,channel,week_start,rank,stone_bundle_count)
  select user_id,p_channel,old_week,rn,
    case when rn<=10 then 16-rn when rn<=20 then 5 when rn<=30 then 4 when rn<=40 then 3 else 2 end
@@ -95,6 +120,7 @@ begin
    reached_at=now()+(random()*interval '7 days'),
    snapshot=jsonb_set(snapshot,'{week_start}',to_jsonb(current_week::text)),updated_at=now()
  where channel=$1;
+ update private.arena_week_state set week_start=current_week where channel=p_channel;
 end $$;
 
 create or replace function private.arena_seed_ranked_profiles(p_channel text) returns void language plpgsql security definer set search_path='' as $$
@@ -119,6 +145,9 @@ begin
  if not (p_snapshot->'stats' ?& array['maxHp','attack','defense','evasion','accuracy','crit','qiAttack','bodyAttack']) then raise exception '戰鬥屬性不完整'; end if;
  if (p_snapshot#>>'{stats,maxHp}')::numeric<=0 or (p_snapshot#>>'{stats,crit}')::numeric not between 0 and 1 then raise exception '戰鬥屬性不正確'; end if;
  p_snapshot:=p_snapshot||jsonb_build_object('week_start',wk::text,'captured_at',floor(extract(epoch from now())*1000));
+ insert into private.arena_name_owners(channel,normalized_name,user_id)
+ values(p_channel,lower(trim(left(coalesce(nullif(trim(p_name),''),'無名修士'),20))),uid)
+ on conflict(channel,normalized_name) do nothing;
  -- Five-minute snapshots are immutable between refreshes.
  if exists(select 1 from public.arena_profiles p where p.user_id=uid and p.channel=p_channel
    and p.snapshot->>'schema_version'='2' and (p.snapshot->>'captured_at')::numeric>extract(epoch from now()-interval '5 minutes')*1000) then
