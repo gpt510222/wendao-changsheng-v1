@@ -41,6 +41,8 @@ begin
   delete from public.arena_rewards where user_id=new_user and channel='formal';
   delete from public.arena_matches where channel='formal' and (challenger_id=new_user or defender_id=new_user);
   delete from public.arena_profiles where user_id=new_user and channel='formal';
+  delete from private.player_state_events where user_id=new_user and channel='formal';
+  delete from private.player_states where user_id=new_user and channel='formal';
   delete from public.account_recovery_backups where user_id=new_user;
   update public.player_accounts set user_id=new_user,updated_at=now() where user_id=old_user;
   update public.player_rankings set user_id=new_user where user_id=old_user;
@@ -51,6 +53,8 @@ begin
   update public.arena_matches set challenger_id=new_user where challenger_id=old_user and channel='formal';
   update public.arena_matches set defender_id=new_user where defender_id=old_user and channel='formal';
   update private.arena_name_owners set user_id=new_user where user_id=old_user and channel='formal';
+  update private.player_states set user_id=new_user where user_id=old_user and channel='formal';
+  update private.player_state_events set user_id=new_user where user_id=old_user and channel='formal';
   update public.account_recovery_backups set user_id=new_user,updated_at=now() where user_id=old_user;
   return recovered_save;
 end $$;

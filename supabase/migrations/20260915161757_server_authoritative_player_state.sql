@@ -34,15 +34,18 @@ revoke all on private.player_states,private.player_state_events from public,anon
 
 create or replace function public.player_state_bootstrap(p_channel text,p_legacy_state jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
-declare uid uuid:=(select auth.uid()); row_data private.player_states; player_name text;
+declare uid uuid:=(select auth.uid()); row_data private.player_states; player_name text; initial_settled_at timestamptz:=now();
 begin
   if uid is null then raise exception 'authentication required'; end if;
   if p_channel not in ('formal','test') then raise exception 'invalid channel'; end if;
   if p_legacy_state is null or jsonb_typeof(p_legacy_state)<>'object' or pg_column_size(p_legacy_state)>5242880 then raise exception 'invalid legacy state'; end if;
   player_name:=left(trim(coalesce(p_legacy_state->>'name','')),20);
   if player_name='' then raise exception 'character name required'; end if;
-  insert into private.player_states(user_id,channel,legacy_state,authoritative_state)
-  values(uid,p_channel,p_legacy_state,jsonb_build_object('name',player_name,'schema_version',1))
+  if coalesce(p_legacy_state->>'lastSave','') ~ '^[0-9]{10,16}$' then
+    initial_settled_at:=greatest(now()-interval '24 hours',least(now(),to_timestamp((p_legacy_state->>'lastSave')::numeric/1000)));
+  end if;
+  insert into private.player_states(user_id,channel,legacy_state,authoritative_state,last_settled_at)
+  values(uid,p_channel,p_legacy_state,jsonb_build_object('name',player_name,'schema_version',1),initial_settled_at)
   on conflict(user_id,channel) do nothing;
   select * into row_data from private.player_states where user_id=uid and channel=p_channel;
   if row_data.revision=1 and not exists(select 1 from private.player_state_events e where e.user_id=uid and e.channel=p_channel) then
