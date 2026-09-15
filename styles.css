@@ -837,3 +837,4 @@ html.entry-transition body::after{content:"";position:fixed;z-index:9999;inset:0
 .arena-buy-modal{pointer-events:auto}
 .cangji-form-error{min-height:1.4em!important;margin:4px 0!important;color:#b52f2f!important;font-weight:800;text-align:center}
 .cangji-claim-all{display:block;width:min(100%,240px);margin:0 auto 10px;padding:10px;border:1px solid #39796e;border-radius:9px;background:#4f8178;color:#fff;font-weight:800}.cangji-claim-all:disabled{opacity:.55}
+.cangji-cancel-all{margin:12px;padding:18px;border:1px solid #a58c68;border-radius:12px;background:#f3e9d7;text-align:center}.cangji-cancel-all h3{margin:0 0 6px;color:#315f58}.cangji-cancel-all p{margin:0 0 12px;color:#706252}.cangji-cancel-all button{width:min(100%,240px);padding:10px;border:1px solid #9a654d;border-radius:9px;background:#96604b;color:#fff;font-weight:800}.cangji-cancel-all button:disabled{opacity:.55}

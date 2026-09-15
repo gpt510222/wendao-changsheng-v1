@@ -37,8 +37,8 @@ begin
  if p_channel not in ('formal','test') or p_choice not in ('rock','scissors','paper') then raise exception '設局內容不正確'; end if;
  if p_wager not between 5000 and 30000 or p_wager%500<>0 then raise exception '押注須為5,000至30,000，並以500為單位'; end if;
  perform pg_advisory_xact_lock(hashtext(uid::text||'-cangji-'||p_channel));
- if (select count(*) from public.cangji_games where creator_id=uid and channel=p_channel and status='open')>=5 then
-   raise exception '待應之局已達上限 5/5';
+ if (select count(*) from public.cangji_games where creator_id=uid and channel=p_channel and (status='open' or (status='resolved' and creator_claimed=false)))>=5 then
+   raise exception '尚未結算的設局已達上限 5/5，請先領取結果或撤回待應之局';
  end if;
  insert into public.cangji_games(channel,creator_id,creator_name,creator_choice,wager)
  values(p_channel,uid,left(coalesce(nullif(trim(p_name),''),'無名修士'),20),p_choice,p_wager)
@@ -128,6 +128,23 @@ begin
  return jsonb_build_object('payout',total_payout,'count',claimed_count);
 end $$;
 
-revoke execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid),public.cangji_claim_all_games(text) from public,anon;
-grant execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid),public.cangji_claim_all_games(text) to authenticated;
+create or replace function public.cangji_cancel_all_games(p_channel text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare uid uuid:=(select auth.uid()); total_refund bigint:=0; cancelled_count integer:=0;
+begin
+ if uid is null then raise exception '請重新登入後再撤局'; end if;
+ if p_channel not in ('formal','test') then raise exception '藏機局版本不正確'; end if;
+ perform pg_advisory_xact_lock(hashtext(uid::text||'-cangji-'||p_channel));
+ with cancelled as (
+   update public.cangji_games
+   set status='cancelled',cancelled_at=now()
+   where creator_id=uid and channel=p_channel and status='open'
+   returning wager
+ )
+ select coalesce(sum(wager),0),count(*) into total_refund,cancelled_count from cancelled;
+ return jsonb_build_object('refund',total_refund,'count',cancelled_count);
+end $$;
+
+revoke execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid),public.cangji_claim_all_games(text),public.cangji_cancel_all_games(text) from public,anon;
+grant execute on function public.cangji_create_game(text,text,text,integer),public.cangji_open_games(text),public.cangji_accept_game(uuid,text,text),public.cangji_creator_games(text),public.cangji_claim_game(uuid),public.cangji_cancel_game(uuid),public.cangji_claim_all_games(text),public.cangji_cancel_all_games(text) to authenticated;
 revoke all on function private.cangji_creator_wins(text,text) from public,anon,authenticated;
