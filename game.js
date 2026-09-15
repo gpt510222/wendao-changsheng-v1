@@ -1,6 +1,6 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-window.WENDAO_BUILD='20260915-131';
+window.WENDAO_BUILD='20260915-133';
 const qStyleMode=true;
 const formalImmortalRealmEnabled=true;
 const leaderboardConfig={url:'https://oxzuunzhsbvumxxbezev.supabase.co',publishableKey:'sb_publishable_u2rmM6v1-AdjRLMZSVetRw_MgjeWSL3',sessionKey:'wendao-supabase-session-release-v1',gameVersion:'v1.0.0',limit:50};
