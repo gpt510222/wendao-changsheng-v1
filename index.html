@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/qstyle-v2/app-icons/wendao-icon-180.png?v=20260911-1">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/qstyle-v2/app-icons/wendao-icon-32.png?v=20260911-1">
   <link rel="stylesheet" href="styles.css?v=20260914-bag-tabs1">
-  <link rel="stylesheet" href="q-style.css?v=20260913-26">
+  <link rel="stylesheet" href="q-style.css?v=20260915-side-entry-slots1">
   <link rel="stylesheet" href="production-fix.css?v=20260911-05">
   <script>document.documentElement.classList.add('q-style');</script>
 </head>
@@ -183,30 +183,30 @@
         <div class="tick"><span id="tickBar"></span></div>
       </section>
 
-      <button id="marketButton" class="market-button" type="button" aria-label="開啟坊市">
+      <button id="marketButton" class="market-button side-entry-button side-entry-right" type="button" aria-label="開啟坊市">
         <img src="assets/qstyle-v2/market-button.png" alt="坊市">
       </button>
-      <button id="mailButton" class="mail-button" type="button" aria-label="開啟信箱">
+      <button id="mailButton" class="mail-button side-entry-button side-entry-right" type="button" aria-label="開啟信箱">
         <img src="assets/qstyle-v2/mail-button.png" alt="信箱">
         <b id="mailUnreadBadge" class="mail-unread-badge hidden">0</b>
       </button>
-      <button id="wendaoArenaButton" class="wendao-arena-button hidden" type="button" aria-label="進入問道臺">
+      <button id="wendaoArenaButton" class="wendao-arena-button side-entry-button side-entry-right hidden" type="button" aria-label="進入問道臺">
         <img src="assets/qstyle-v2/wendao-arena-entry-v1.png" alt="問道臺">
       </button>
-      <button id="encounterButton" class="encounter-button hidden" type="button" aria-label="查看奇遇">
+      <button id="encounterButton" class="encounter-button side-entry-button side-entry-left hidden" type="button" aria-label="查看奇遇">
         <img src="assets/qstyle-v2/encounter-button-v1.png" alt="因緣">
         <b id="encounterBadge" class="mail-unread-badge hidden">0</b>
       </button>
-      <button id="artifactTombButton" class="artifact-tomb-button hidden" type="button" aria-label="進入鎮界器塚">
+      <button id="artifactTombButton" class="artifact-tomb-button side-entry-button side-entry-left hidden" type="button" aria-label="進入鎮界器塚">
         <img src="assets/qstyle-v2/artifacts/artifact-tomb-entry.png" alt="鎮界器塚">
       </button>
-      <button id="mainlineButton" class="mainline-entry-button" type="button" aria-label="進入九鎖封天">
+      <button id="mainlineButton" class="mainline-entry-button side-entry-button side-entry-left" type="button" aria-label="進入九鎖封天">
         <img src="assets/qstyle-v2/mainline/nine-locks-entry.png" alt="九鎖封天">
       </button>
-      <button id="ascensionButton" class="ascension-entry-button hidden" type="button" aria-label="進入飛升天路">
+      <button id="ascensionButton" class="ascension-entry-button side-entry-button side-entry-left hidden" type="button" aria-label="進入飛升天路">
         <img src="assets/qstyle-v2/ascension/entry-tianlu-v1.png" alt="天路">
       </button>
-      <button id="realmSwitchButton" class="realm-switch-button hidden" type="button" aria-label="前往仙界">
+      <button id="realmSwitchButton" class="realm-switch-button side-entry-button side-entry-left hidden" type="button" aria-label="前往仙界">
         <img src="assets/qstyle-v2/ascension/entry-immortal-v1.png" alt="仙界">
       </button>
 
@@ -585,10 +585,10 @@
   <audio id="tribulationFailureBgm" src="assets/bgm-tribulation-failure-v1.wav" preload="auto"></audio>
   <audio id="swordBreakthroughBgm" src="assets/bgm-sword-breakthrough-user-v1.wav" preload="auto"></audio>
   <script src="partner-system.js?v=20260911-6"></script>
-  <script src="game.js?v=20260915-ascension-record1"></script>
+  <script src="game.js?v=20260915-side-entry-slots1"></script>
   <script src="arena.js?v=20260914-purchase-stable1"></script>
   <script src="immortal-potential-system.js?v=20260913-1"></script>
   <script src="production-rows.js?v=20260911-05"></script>
-  <script>window.addEventListener('load',()=>{if(window.WENDAO_BUILD==='20260915-121')return;const key='wendao-build-refresh-20260915-121';if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');let refreshed=false;const refresh=()=>{if(refreshed)return;refreshed=true;location.reload()};navigator.serviceWorker?.addEventListener('controllerchange',refresh,{once:true});navigator.serviceWorker?.getRegistration().then(registration=>registration?.update()).catch(()=>{});setTimeout(refresh,1800)});</script>
+  <script>window.addEventListener('load',()=>{if(window.WENDAO_BUILD==='20260915-123')return;const key='wendao-build-refresh-20260915-123';if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');let refreshed=false;const refresh=()=>{if(refreshed)return;refreshed=true;location.reload()};navigator.serviceWorker?.addEventListener('controllerchange',refresh,{once:true});navigator.serviceWorker?.getRegistration().then(registration=>registration?.update()).catch(()=>{});setTimeout(refresh,1800)});</script>
 </body>
 </html>

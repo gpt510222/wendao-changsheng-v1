@@ -823,6 +823,48 @@ html.q-style #gameScreen.game-screen.immortal-realm.feature-open .feature-panel:
 .immortal-region-tabs,.wasteland-route-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.immortal-region-tabs button,.wasteland-route-picker button{padding:10px;border:1px solid #625d51;border-radius:10px;background:#1a201fcc;color:#a69f91}.immortal-region-tabs button.active,.wasteland-route-picker button.active{border-color:#83ad9f;background:linear-gradient(#435751,#26332f);color:#e7dfca;box-shadow:inset 0 -2px #82c4b0}.immortal-region-tabs button:disabled,.wasteland-route-picker button:disabled{opacity:.38}.wuxi-hero{position:relative;overflow:hidden;height:150px;border:1px solid #716957;border-radius:14px;background:#171c1b}.wuxi-hero img{width:100%;height:100%;object-fit:cover;object-position:center 46%}.wuxi-hero span{position:absolute;inset:auto 0 0;padding:9px 12px;background:linear-gradient(transparent,#111817e8);color:#c9c0ab;font-size:9px}.immortal-action-card small{display:block;margin-top:4px;color:#75998e;font-size:9px}.wasteland-route-picker{grid-template-columns:repeat(3,minmax(0,1fr))}.wasteland-route-picker button{display:grid;gap:3px;text-align:left}.wasteland-route-picker small{color:#8b958d;font-size:9px}.wasteland-route-detail,.wasteland-body{display:grid;gap:7px;padding:13px;border:1px solid #665f51;border-radius:12px;background:#1a201edb}.wasteland-route-detail>small,.wasteland-body header small{color:#82aa9e;letter-spacing:.1em}.wasteland-route-detail>b,.wasteland-body header b{color:#e1d7bd;font:700 18px serif}.wasteland-route-detail p,.wasteland-body p{margin:0;color:#9e9789;font-size:10px;line-height:1.55}.wasteland-route-detail span{color:#b7d9cf;font-size:10px}.wasteland-body header{display:flex;justify-content:space-between;align-items:end}.wasteland-body>div{display:grid;grid-template-columns:1fr 1fr;gap:7px}.wasteland-body>div span{padding:8px;border:1px solid #5f5a4e;border-radius:8px;color:#999285;font-size:9px}.wasteland-body>div b{display:block;color:#c7ddd5;font-size:12px}.wasteland-body button{padding:9px;border:1px solid #8e7f63;border-radius:8px;background:linear-gradient(#50645d,#293630);color:#eee5ce}.wasteland-body button:disabled{opacity:.4}.wasteland-body>strong{color:#b7ded2}.wasteland-outpost{display:grid;place-items:center;gap:5px;min-height:145px;border:1px solid #6b6455;border-radius:14px;background:radial-gradient(circle at 50% 65%,#73988b38,transparent 44%),linear-gradient(#202624,#151918)}.wasteland-outpost i{display:block;width:92px;height:72px;border:2px solid #625e53;border-top:0;border-radius:4px 4px 45% 45%;box-shadow:inset 0 -12px #44564f}.wasteland-outpost.stage-1 i,.wasteland-outpost.stage-2 i,.wasteland-outpost.stage-3 i{border-color:#79988e;filter:drop-shadow(0 0 7px #74aa99)}.wasteland-outpost b{color:#d8cfb8}.wasteland-outpost span{color:#8f897d;font-size:10px}@media(max-width:470px){.wasteland-route-picker{grid-template-columns:1fr}.immortal-action-card{grid-template-columns:31px minmax(0,1fr)}.immortal-action-card button{grid-column:2}.wasteland-body header{display:grid;gap:3px}}
 @media(max-width:540px){.immortal-play-page{padding:12px 10px}.immortal-action-card{grid-template-columns:30px minmax(0,1fr)}.immortal-action-card button{grid-column:2;width:100%}.immortal-ratio-grid span{padding:8px 1px}.immortal-power strong{font-size:21px}}
 
+/* Independent side-entry slot rails: desktop geometry. */
+.q-style .game-screen{
+  --side-entry-size:92px;
+  --side-entry-edge:3.5%;
+  --side-entry-top:19%;
+  --side-entry-column-gap:14px;
+  --side-entry-row-gap:18px;
+}
+.q-style .side-entry-button{
+  position:absolute!important;
+  z-index:9;
+  width:var(--side-entry-size)!important;
+  height:var(--side-entry-size)!important;
+  margin:0!important;
+  padding:0!important;
+  transform:none;
+}
+.q-style .side-entry-left{right:auto!important}
+.q-style .side-entry-right{left:auto!important}
+.q-style .side-entry-left[data-side-slot="1"],.q-style .side-entry-left[data-side-slot="2"],.q-style .side-entry-left[data-side-slot="3"],.q-style .side-entry-left[data-side-slot="4"]{left:var(--side-entry-edge)!important}
+.q-style .side-entry-left[data-side-slot="5"],.q-style .side-entry-left[data-side-slot="6"],.q-style .side-entry-left[data-side-slot="7"],.q-style .side-entry-left[data-side-slot="8"]{left:calc(var(--side-entry-edge) + var(--side-entry-size) + var(--side-entry-column-gap))!important}
+.q-style .side-entry-right[data-side-slot="1"],.q-style .side-entry-right[data-side-slot="2"],.q-style .side-entry-right[data-side-slot="3"],.q-style .side-entry-right[data-side-slot="4"]{right:var(--side-entry-edge)!important}
+.q-style .side-entry-right[data-side-slot="5"],.q-style .side-entry-right[data-side-slot="6"],.q-style .side-entry-right[data-side-slot="7"],.q-style .side-entry-right[data-side-slot="8"]{right:calc(var(--side-entry-edge) + var(--side-entry-size) + var(--side-entry-column-gap))!important}
+.q-style .side-entry-button[data-side-slot="1"],.q-style .side-entry-button[data-side-slot="5"]{top:var(--side-entry-top)!important}
+.q-style .side-entry-button[data-side-slot="2"],.q-style .side-entry-button[data-side-slot="6"]{top:calc(var(--side-entry-top) + var(--side-entry-size) + var(--side-entry-row-gap))!important}
+.q-style .side-entry-button[data-side-slot="3"],.q-style .side-entry-button[data-side-slot="7"]{top:calc(var(--side-entry-top) + var(--side-entry-size) + var(--side-entry-row-gap) + var(--side-entry-size) + var(--side-entry-row-gap))!important}
+.q-style .side-entry-button[data-side-slot="4"],.q-style .side-entry-button[data-side-slot="8"]{top:calc(var(--side-entry-top) + var(--side-entry-size) + var(--side-entry-row-gap) + var(--side-entry-size) + var(--side-entry-row-gap) + var(--side-entry-size) + var(--side-entry-row-gap))!important}
+.q-style .side-entry-button:hover,.q-style .side-entry-button:focus-visible{transform:translateY(-3px) scale(1.04)}
+.q-style .side-entry-button:active{transform:translateY(1px) scale(.98)}
+.q-style .game-screen.immortal-realm .realm-switch-button{left:calc(var(--side-entry-edge) + var(--side-entry-size) + var(--side-entry-column-gap))!important;top:var(--side-entry-top)!important}
+
+/* Mobile gets its own smaller rail and tighter horizontal/vertical spacing. */
+@media(max-width:620px){
+  .q-style .game-screen{
+    --side-entry-size:72px;
+    --side-entry-edge:2%;
+    --side-entry-top:20%;
+    --side-entry-column-gap:6px;
+    --side-entry-row-gap:10px;
+  }
+}
+
 /* Immortal realm keeps the mortal navigation geometry but uses a separate visual system. */
 .q-style .immortal-bottom-nav{display:none!important}
 .q-style .game-screen.immortal-realm .immortal-bottom-nav{display:flex!important;overflow:visible;isolation:isolate;border:2px solid #6f6759;border-bottom:0;border-radius:20px 20px 0 0;background:linear-gradient(180deg,#343a39f5,#171d1df8);box-shadow:inset 0 2px 0 #b9a97966,inset 0 5px 0 #e4d6aa18,0 -9px 24px #080d0db3}
