@@ -1,0 +1,20 @@
+create or replace function public.player_state_claim_elapsed(p_channel text,p_expected_revision bigint,p_request_id uuid)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare uid uuid:=(select auth.uid());started timestamptz;result jsonb;ticks integer;overlap numeric;infused numeric:=0;s private.player_sect_states;c private.player_cave_states;w private.player_resource_wallets;bonus numeric:=0;reward_data jsonb;
+begin
+ select last_settled_at into started from private.player_states where user_id=uid and channel=p_channel;result:=public.player_state_claim_elapsed_sect_base(p_channel,p_expected_revision,p_request_id);ticks:=coalesce((result->>'elapsed_ticks')::integer,0);if ticks<1 then return result;end if;
+ select * into s from private.player_sect_states where user_id=uid and channel=p_channel;select * into c from private.player_cave_states where user_id=uid and channel=p_channel;select * into w from private.player_resource_wallets where user_id=uid and channel=p_channel for update;if s.user_id is not null then overlap:=private.sect_practice_overlap_ticks(s,started,ticks);infused:=private.infusion_overlap_ticks(c,'qi',started,ticks);bonus:=floor(coalesce((w.earning_profile->>'cultivation_rate')::numeric,0)*(4*overlap+.48*least(overlap,infused)));end if;
+ if bonus>0 then update private.player_resource_wallets set cultivation=cultivation+bonus,revision=revision+1,updated_at=now() where user_id=uid and channel=p_channel returning * into w;reward_data:=coalesce(result->'rewards','{}'::jsonb);reward_data:=jsonb_set(reward_data,'{free}',to_jsonb((coalesce((reward_data->>'free')::numeric,0)+bonus)::text));result:=result||jsonb_build_object('rewards',reward_data,'wallet_revision',w.revision);end if;return result;
+end $$;
+
+create or replace function public.offline_reward_prepare(p_channel text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare uid uuid:=(select auth.uid());started timestamptz;segment_start timestamptz;old_ticks integer:=0;result jsonb;total_ticks integer;added_ticks integer;overlap numeric;infused numeric:=0;s private.player_sect_states;c private.player_cave_states;w private.player_resource_wallets;v private.offline_reward_vaults;reward_data jsonb;bonus numeric:=0;
+begin
+ select last_settled_at into started from private.player_states where user_id=uid and channel=p_channel;select coalesce(elapsed_ticks,0) into old_ticks from private.offline_reward_vaults where user_id=uid and channel=p_channel and status='pending';result:=public.offline_reward_prepare_sect_base(p_channel);total_ticks:=coalesce((result->>'elapsed_ticks')::integer,0);added_ticks:=greatest(0,total_ticks-coalesce(old_ticks,0));if added_ticks<1 then return result;end if;
+ segment_start:=started+make_interval(secs=>old_ticks*5);select * into s from private.player_sect_states where user_id=uid and channel=p_channel;select * into c from private.player_cave_states where user_id=uid and channel=p_channel;select * into w from private.player_resource_wallets where user_id=uid and channel=p_channel;if s.user_id is not null then overlap:=private.sect_practice_overlap_ticks(s,segment_start,added_ticks);infused:=private.infusion_overlap_ticks(c,'qi',segment_start,added_ticks);bonus:=floor(coalesce((w.earning_profile->>'cultivation_rate')::numeric,0)*(4*overlap+.48*least(overlap,infused)));end if;
+ if bonus>0 then select * into v from private.offline_reward_vaults where id=(result->>'vault_id')::uuid for update;reward_data:=v.rewards;reward_data:=jsonb_set(reward_data,'{free}',to_jsonb((coalesce((reward_data->>'free')::numeric,0)+bonus)::text));update private.offline_reward_vaults set rewards=reward_data,updated_at=now() where id=v.id returning * into v;result:=result||jsonb_build_object('rewards',v.rewards);end if;return result;
+end $$;
+
+revoke execute on function public.player_state_claim_elapsed(text,bigint,uuid),public.offline_reward_prepare(text) from public,anon;
+grant execute on function public.player_state_claim_elapsed(text,bigint,uuid),public.offline_reward_prepare(text) to authenticated;
