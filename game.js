@@ -520,6 +520,7 @@ let itemModalKey=null,itemModalQuantity=1,sellItemKey=null,sellItemQuantity=1;
 let identityChangeItemKey=null;
 let serverPlayerStateRevision=0;
 let serverSettlementInFlight=false;
+let pendingOfflineVault=null;
 let swordPathChoiceConfirming=false;
 let clockEpoch=Date.now(),clockPerf=performance.now(),trustedClockReady=location.protocol==='file:',clockSyncPromise=null;
 
@@ -954,7 +955,7 @@ async function ensureLeaderboardSession(forceRefresh=false){
   const response=await fetch(`${leaderboardConfig.url}/auth/v1/signup`,{method:'POST',headers:leaderboardHeaders(),body:'{}'});if(!response.ok)throw new Error('anonymous sign-in failed');return storeLeaderboardSession(await response.json());
 }
 async function playerStateRpc(name,body={},retryAuth=true){let session=await ensureLeaderboardSession(),response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)});if(response.status===401&&retryAuth){await ensureLeaderboardSession(true);return playerStateRpc(name,body,false)}const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'伺服器角色狀態暫時無法使用');return data}
-async function connectServerPlayerState(){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';const record=await playerStateRpc('player_state_bootstrap',{p_channel:channel,p_legacy_state:recoverySaveData()});serverPlayerStateRevision=Number(record?.revision)||0;if(!serverPlayerStateRevision)throw new Error('伺服器角色狀態未建立');const settled=await playerStateRpc('player_state_claim_elapsed',{p_channel:channel,p_expected_revision:serverPlayerStateRevision,p_request_id:crypto.randomUUID()});serverPlayerStateRevision=Number(settled?.revision)||serverPlayerStateRevision;return settled}
+async function connectServerPlayerState(){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';const record=await playerStateRpc('player_state_bootstrap',{p_channel:channel,p_legacy_state:recoverySaveData()});serverPlayerStateRevision=Number(record?.revision)||0;if(!serverPlayerStateRevision)throw new Error('伺服器角色狀態未建立');return playerStateRpc('offline_reward_prepare',{p_channel:channel})}
 async function claimServerSettlementTicks(){if(!sessionOnline||serverSettlementInFlight)return 0;serverSettlementInFlight=true;try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',settled=await playerStateRpc('player_state_claim_elapsed',{p_channel:channel,p_expected_revision:serverPlayerStateRevision,p_request_id:crypto.randomUUID()});serverPlayerStateRevision=Number(settled?.revision)||serverPlayerStateRevision;return Math.max(0,Math.floor(Number(settled?.elapsed_ticks??settled?.elapsed_seconds/5)||0))}catch(error){console.warn('server settlement paused',error);return 0}finally{serverSettlementInFlight=false}}
 function publicPlayerUid(userId){return userId?`WD1-${String(userId).toUpperCase()}`:''}
 async function registerFormalPlayer(session,retryAuth=true){
@@ -1498,11 +1499,13 @@ function showOfflineRewards(before,seconds){
   const hours=Math.floor(seconds/3600),minutes=Math.floor(seconds%3600/60),secs=seconds%60;$('#offlineDuration').textContent=`離線時間 ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
   $('#offlineRewardList').innerHTML=rows.length?rows.map(([label,amount])=>`<div><span>${label}</span><b>+${formatLargeNumber(amount)}</b></div>`).join(''):'<p>本次離線時間不足，尚未產生收益。</p>';$('#offlineModal').classList.remove('hidden');
 }
+function showPendingOfflineRewards(vault){pendingOfflineVault=vault;const seconds=Math.max(0,Math.floor(Number(vault?.elapsed_ticks)||0))*5,hours=Math.floor(seconds/3600),minutes=Math.floor(seconds%3600/60),secs=seconds%60;$('#offlineDuration').textContent=`離線時間 ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;$('#offlineRewardList').innerHTML='<div><span>後端收益庫</span><b>待領取</b></div><p>修為、靈氣、劍元與洞府產出會在確認領取後一次結算。</p>';const button=$('#offlineRewardClaim');button.disabled=false;button.textContent='領取離線收益';$('#offlineModal').classList.remove('hidden')}
+async function claimOfflineRewards(){const vault=pendingOfflineVault,button=$('#offlineRewardClaim');if(!vault?.vault_id||button.disabled)return;button.disabled=true;button.textContent='領取中…';try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',receipt=await playerStateRpc('offline_reward_claim',{p_channel:channel,p_vault_id:vault.vault_id,p_request_id:crypto.randomUUID()}),ticks=Math.max(0,Math.floor(Number(receipt?.elapsed_ticks)||0)),seconds=ticks*5,before=rewardSnapshot(),now=gameNow();if(ticks&&state.cultivationAwakened){const from=now-seconds,gain=state.spiritPathOpened?offlineCultivationGain(from,now):0,swordGain=offlineSwordEssenceGain(ticks,from,now);addAura(ticks*auraRate());state.swordEssence+=toBigInt(swordGain);runSettlementTick(ticks);if(state.spiritPathOpened)addCultivation(gain,true)}pendingOfflineVault=null;showOfflineRewards(before,seconds);button.textContent='已領取';save();render()}catch(error){button.disabled=false;button.textContent='重新領取';toast(error.message)}}
 function closeOfflineRewards(){
   clearTimeout(offlineRewardTimer);offlineRewardTimer=null;$('#offlineModal').classList.add('hidden');
 }
-function scheduleOfflineRewards(before,seconds){
-  clearTimeout(offlineRewardTimer);offlineRewardTimer=setTimeout(()=>{offlineRewardTimer=null;if(sessionOnline)showOfflineRewards(before,seconds)},180);
+function scheduleOfflineRewards(vault){
+  clearTimeout(offlineRewardTimer);offlineRewardTimer=setTimeout(()=>{offlineRewardTimer=null;if(sessionOnline)showPendingOfflineRewards(vault)},180);
 }
 async function startGame() {
   if(sessionOnline)return;finishPause();let serverSettlement;try{serverSettlement=await connectServerPlayerState();sessionOnline=true}catch(error){sessionOnline=false;show('#titleScreen');$('#titleHint').textContent='需要連線伺服器才能進入遊戲';toast(error.message);return}
@@ -1514,7 +1517,6 @@ async function startGame() {
   ['practiceBuff','transmissionBuff'].forEach(key=>{const buff=state[key];if(!buff.active&&buff.remaining>0)state[key]={active:true,until:now+buff.remaining,remaining:0,total:buff.total||buff.remaining}});
   show('#gameScreen',true);
   state.activePath=state.activePath||state.firstPath;const ascension=normalizeAscension();startBgm(ascension.ascended&&ascension.currentRealm==='immortal'?'immortalBarren':state.firstPath?pathBgmTheme():'tutorial');
-  const offlineBefore=rewardSnapshot();
   processSectYears();
   ensureUpdateCompensationMail();
   repairClaimedUpdateCompensation();
@@ -1524,8 +1526,8 @@ async function startGame() {
   $('#gameScreen').classList.remove('feature-open');
   $$('.feature-tab').forEach(x=>x.classList.remove('active'));
   applyCharacterVisual();
-  const away=Math.max(0,Math.floor((Number(serverSettlement?.elapsed_seconds)||0)/5));
-  if(away>0&&state.cultivationAwakened) { const gain=state.spiritPathOpened?offlineCultivationGain(savedLast,now):0,swordGain=offlineSwordEssenceGain(away,savedLast,now);addAura(away*auraRate());state.swordEssence+=toBigInt(swordGain);runSettlementTick(away);if(state.spiritPathOpened)addCultivation(gain,true);scheduleOfflineRewards(offlineBefore,away*5); }
+  const away=Math.max(0,Math.floor(Number(serverSettlement?.elapsed_ticks)||0));
+  if(away>0&&state.cultivationAwakened)scheduleOfflineRewards(serverSettlement);
   else if(clockRollback)setTimeout(()=>toast('偵測到時間異常，本次不結算離線收益'),250);
   else if(!clockOkay&&location.protocol!=='file:')setTimeout(()=>toast('無法取得可信時間，已暫停離線與每日結算'),250);
   tickStart=gameNow();processEncounterTriggers(0);render();save();syncJadeGrants();
@@ -3241,6 +3243,7 @@ bindQuantityInput('itemQuantity',{minimum:1,maximum:()=>{const item=itemCatalog[
 $('#sellCancelBtn').onclick=closeSellModal;
 $('#sellConfirmBtn').onclick=confirmSellItem;
 $('#offlineModalClose').onclick=closeOfflineRewards;
+$('#offlineRewardClaim').onclick=claimOfflineRewards;
 $('#offlineModal').onclick=event=>{if(event.target===$('#offlineModal'))closeOfflineRewards()};
 $('#confirmModalCancel').onclick=()=>closeGameConfirm(false);
 $('#confirmModalAccept').onclick=()=>closeGameConfirm(true);
