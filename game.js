@@ -484,6 +484,7 @@ defaults.ownedMasterworkTrueForms=[];
 defaults.sectTechniqueMailVersion=0;
 defaults.updateCompensationMailVersion=1;
 defaults.secondUpdateCompensationMailVersion=1;
+defaults.serverMailItemBalances={};
 defaults.sectRecords={};
 defaults.sectMerit=0;
 defaults.sectSearchAvailableAt=0;
@@ -1241,12 +1242,21 @@ function renderMailDetail(){
 }
 function openMailDetail(id){const mail=mailbox().find(entry=>entry.id===id);if(!mail)return;mail.read=true;currentMailId=id;renderMailbox();renderMailButton();renderMailDetail();$('#mailDetailModal').classList.remove('hidden');save()}
 function closeMailDetail(){$('#mailDetailModal').classList.add('hidden');currentMailId=null}
-function claimMailAttachments(){
+function applyServerMailItemBalances(balances={}){
+  if(!state.serverMailItemBalances||typeof state.serverMailItemBalances!=='object')state.serverMailItemBalances={};
+  const validItemCounts=new Set(Object.values(itemCatalog).map(item=>item.count).filter(Boolean));
+  for(const [key,value] of Object.entries(balances||{})){if(!validItemCounts.has(key))continue;const next=Math.max(0,Math.floor(Number(value)||0)),previous=Math.max(0,Math.floor(Number(state.serverMailItemBalances[key])||0)),gain=Math.max(0,next-previous);if(gain)state[key]=(Number(state[key])||0)+gain;state.serverMailItemBalances[key]=next}
+}
+function serverMailKey(mail){return mail?.id?.startsWith('welcome-')?'welcome-v1':mail?.id||''}
+async function syncServerMailClaims(){
+  if(!sessionOnline)return;const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_mail_claim_status',{p_channel:channel,p_mail_ids:mailbox().map(mail=>mail.id)}),claimed=new Set(result?.claimed||[]);for(const mail of mailbox())if(claimed.has(serverMailKey(mail)))mail.claimed=true;
+}
+async function claimMailAttachments(){
   const mail=mailbox().find(entry=>entry.id===currentMailId);if(!mail||mail.claimed)return;
   const itemAttachments=(mail.attachments||[]).filter(attachment=>attachment.type==='item').map(attachment=>[attachment.key,Number(attachment.amount)||0]);
   if(!canStoreBagCounts(itemAttachments))return toast('儲物袋容量不足，請先騰出空間');
-  const validItemCounts=new Set(Object.values(itemCatalog).map(item=>item.count).filter(Boolean));for(const attachment of mail.attachments||[]){if(attachment.type==='currency'&&Object.prototype.hasOwnProperty.call(state,attachment.key)){if(['free','swordEssence'].includes(attachment.key))state[attachment.key]=toBigInt(state[attachment.key])+toBigInt(attachment.amount);else state[attachment.key]=(Number(state[attachment.key])||0)+Number(attachment.amount||0)}else if(attachment.type==='item'&&validItemCounts.has(attachment.key))state[attachment.key]=(Number(state[attachment.key])||0)+Number(attachment.amount||0)}
-  mail.claimed=true;renderMailDetail();renderMailbox();renderMailButton();render();save();toast('附件已收入囊中');
+  const claim=$('#mailClaimBtn');claim.disabled=true;claim.textContent='領取中…';
+  try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_mail_claim',{p_channel:channel,p_mail_id:mail.id,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;serverSectRevision=Number(result?.sect?.revision)||serverSectRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerSect(result?.sect||{});applyServerMailItemBalances(result?.itemBalances||{});mail.claimed=true;renderMailDetail();renderMailbox();renderMailButton();render();save();toast(result?.alreadyClaimed?'此附件已領取，已同步伺服器記錄':'附件已收入囊中')}catch(error){claim.disabled=false;claim.textContent='重新領取';toast(error.message)}
 }
 async function deleteCurrentMail(){
   const mail=mailbox().find(entry=>entry.id===currentMailId);if(!mail)return;
@@ -1555,6 +1565,7 @@ async function startGame() {
   ensureUpdateCompensationMail();
   repairClaimedUpdateCompensation();
   ensureSecondUpdateCompensationMail();
+  try{await syncServerMailClaims()}catch(error){console.warn('mail claim status unavailable',error)}
   currentFeature=null;
   $('#featurePanel').classList.add('hidden');
   $('#gameScreen').classList.remove('feature-open');
