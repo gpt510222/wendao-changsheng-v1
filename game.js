@@ -2988,9 +2988,10 @@ function openMarketPurchase(id){
   updateMarketPurchaseModal();$('#marketPurchaseModal').classList.remove('hidden');
 }
 function closeMarketPurchase(){$('#marketPurchaseModal').classList.add('hidden');marketPurchaseOffer=null;marketPurchaseQuantity=1}
-function confirmMarketPurchase(){
+async function confirmMarketPurchase(){
   const offer=marketPurchaseOffer,reason=marketPurchaseBlockReason(offer),maximum=marketPurchaseCapacity(offer);if(!offer)return;if(reason)return toast(reason);
   const quantity=offer.quantityEnabled?Math.min(marketPurchaseQuantity,maximum):1;if(quantity<1)return;
+  if(offer.currencyKey==='spiritStone'&&!offer.item?.techniqueBook){const confirm=$('#marketPurchaseConfirm');confirm.disabled=true;confirm.textContent='購買中…';try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_spirit_stone_market_purchase',{p_channel:channel,p_offer_id:offer.id,p_quantity:quantity,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerMailItemBalances(result?.itemBalances||{});if(offer.dailyLimit!=null){const daily=marketDailyState();daily.counts[offer.id]=Number(result.periodCount)||0}if(offer.weeklyLimit!=null){const weekly=marketWeeklyState(),key=offer.weeklyKey||offer.id;weekly.counts[key]=Number(result.periodCount)||0}toast(`購得「${offer.name}」${quantity>1?` × ${quantity}`:''}`);closeMarketPurchase();renderMarket(currentMarketTab);render();save()}catch(error){confirm.disabled=false;confirm.textContent='確認購買';toast(error.message)}return}
   state[offer.currencyKey]-=offer.price*quantity;state[offer.item.count]=(state[offer.item.count]||0)+quantity;
   if(offer.dailyLimit!=null){const daily=marketDailyState();daily.counts[offer.id]=(daily.counts[offer.id]||0)+quantity}
   if(offer.weeklyLimit!=null){const weekly=marketWeeklyState(),key=offer.weeklyKey||offer.id;weekly.counts[key]=(weekly.counts[key]||0)+quantity}
