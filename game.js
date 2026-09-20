@@ -528,6 +528,7 @@ let serverCaveRevision=0;
 let serverProgressionRevision=0;
 let serverBodyRevision=0;
 let serverSectRevision=0;
+let serverJadeRevision=0;
 let bodySettlementInFlight=false;
 let swordPathChoiceConfirming=false;
 let clockEpoch=Date.now(),clockPerf=performance.now(),trustedClockReady=location.protocol==='file:',clockSyncPromise=null;
@@ -1020,12 +1021,7 @@ async function markJadeGrantClaimed(session,id){
 async function syncJadeGrants({notify=true}={}){
   if(jadeGrantSyncInFlight||!state.name)return 0;jadeGrantSyncInFlight=true;
   try{
-    const session=await ensureLeaderboardSession();await registerFormalPlayer(session);
-    const query=`user_id=eq.${encodeURIComponent(session.user.id)}&status=eq.pending&select=id,amount,order_ref,note,created_at&order=created_at.asc`;
-    const response=await fetch(`${leaderboardConfig.url}/rest/v1/jade_grants?${query}`,{headers:leaderboardHeaders(session.access_token)});if(!response.ok)throw new Error('grant lookup failed');
-    const grants=await response.json(),processed=new Set(Array.isArray(state.processedJadeGrantIds)?state.processedJadeGrantIds:[]);let gained=0;
-    for(const grant of grants){const amount=Math.max(0,Math.floor(Number(grant.amount)||0));if(!processed.has(grant.id)&&amount>0){state.spiritJade=(state.spiritJade||0)+amount;processed.add(grant.id);gained+=amount;state.processedJadeGrantIds=[...processed].slice(-500);save()}await markJadeGrantClaimed(session,grant.id)}
-    if(gained){render();if(notify)toast(`靈玉發放已入帳・+${formatLargeNumber(gained)} 靈玉`)}return gained;
+    const session=await ensureLeaderboardSession();await registerFormalPlayer(session);const before=Math.max(0,Number(state.spiritJade)||0),channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',wallet=await playerStateRpc('player_jade_bootstrap',{p_channel:channel,p_legacy_balance:before});state.spiritJade=Math.max(0,Number(wallet?.balance)||0);serverJadeRevision=Number(wallet?.revision)||serverJadeRevision;const gained=Math.max(0,state.spiritJade-before);render();save();if(gained&&notify)toast(`靈玉發放已入帳・+${formatLargeNumber(gained)} 靈玉`);return gained;
   }catch{return 0}finally{jadeGrantSyncInFlight=false}
 }
 async function refreshPlayerUidDisplay(){
@@ -1552,7 +1548,7 @@ function scheduleOfflineRewards(vault){
   clearTimeout(offlineRewardTimer);offlineRewardTimer=setTimeout(()=>{offlineRewardTimer=null;if(sessionOnline)showPendingOfflineRewards(vault)},180);
 }
 async function startGame() {
-  if(sessionOnline)return;finishPause();let serverSettlement;try{serverSettlement=await connectServerPlayerState();sessionOnline=true;await importLegacyQiRuntime();await playerQiRuntime();await playerSectBootstrap();await playerSectProgressBootstrap();await playerSectEconomy()}catch(error){sessionOnline=false;show('#titleScreen');$('#titleHint').textContent='需要連線伺服器才能進入遊戲';toast(error.message);return}
+  if(sessionOnline)return;finishPause();let serverSettlement;try{serverSettlement=await connectServerPlayerState();sessionOnline=true;await importLegacyQiRuntime();await playerQiRuntime();await playerSectBootstrap();await playerSectProgressBootstrap();await playerSectEconomy();await syncJadeGrants({notify:false})}catch(error){sessionOnline=false;show('#titleScreen');$('#titleHint').textContent='需要連線伺服器才能進入遊戲';toast(error.message);return}
   await verifyAccountOwnership();if(suppressSave)return;
   const savedLast=state.lastSave||0,savedTrusted=state.lastTrustedTime||0;
   trustedClockReady=location.protocol==='file:';
@@ -2991,6 +2987,7 @@ function closeMarketPurchase(){$('#marketPurchaseModal').classList.add('hidden')
 async function confirmMarketPurchase(){
   const offer=marketPurchaseOffer,reason=marketPurchaseBlockReason(offer),maximum=marketPurchaseCapacity(offer);if(!offer)return;if(reason)return toast(reason);
   const quantity=offer.quantityEnabled?Math.min(marketPurchaseQuantity,maximum):1;if(quantity<1)return;
+  if(offer.currencyKey==='spiritJade'){const confirm=$('#marketPurchaseConfirm');confirm.disabled=true;confirm.textContent='購買中…';try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_jade_shop_purchase',{p_channel:channel,p_offer_id:offer.id,p_quantity:quantity,p_request_id:crypto.randomUUID()});state.spiritJade=Math.max(0,Number(result?.jade?.balance)||0);serverJadeRevision=Number(result?.jade?.revision)||serverJadeRevision;applyServerMailItemBalances(result?.itemBalances||{});if(offer.dailyLimit!=null){const daily=marketDailyState();daily.counts[offer.id]=Number(result.periodCount)||0}if(offer.weeklyLimit!=null){const weekly=marketWeeklyState(),key=offer.weeklyKey||offer.id;weekly.counts[key]=Number(result.periodCount)||0}if(offer.permanentLimit!=null)state.marketPermanentPurchases[offer.id]=Number(result.periodCount)||0;if(offer.item.techniqueBook){const legacy=scriptureDailyState();if(!legacy.ids.includes(offer.id))legacy.ids.push(offer.id)}if(offer.id==='divineRoamingManual')state.divineRoamingUnlocked=true;toast(`購得「${offer.name}」${quantity>1?` × ${quantity}`:''}`);closeMarketPurchase();renderMarket(currentMarketTab);render();save()}catch(error){confirm.disabled=false;confirm.textContent='確認購買';toast(error.message)}return}
   if(offer.item?.techniqueBook&&!offer.item.techniqueBook.exclusiveMarket||offer.currencyKey==='prestige'){const confirm=$('#marketPurchaseConfirm');confirm.disabled=true;confirm.textContent='購買中…';try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_secure_market_purchase',{p_channel:channel,p_offer_id:offer.id,p_quantity:quantity,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;serverSectRevision=Number(result?.sect?.revision)||serverSectRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerSect(result?.sect||{});applyServerMailItemBalances(result?.itemBalances||{});if(offer.dailyLimit!=null){const daily=marketDailyState();daily.counts[offer.id]=Number(result.periodCount)||0}if(offer.permanentLimit!=null)state.marketPermanentPurchases[offer.id]=Number(result.periodCount)||0;if(offer.item.techniqueBook){const legacy=scriptureDailyState();if(!legacy.ids.includes(offer.id))legacy.ids.push(offer.id)}toast(`購得「${offer.name}」${quantity>1?` × ${quantity}`:''}`);closeMarketPurchase();renderMarket(currentMarketTab);render();save()}catch(error){confirm.disabled=false;confirm.textContent='確認購買';toast(error.message)}return}
   if(offer.currencyKey==='spiritStone'&&!offer.item?.techniqueBook){const confirm=$('#marketPurchaseConfirm');confirm.disabled=true;confirm.textContent='購買中…';try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_spirit_stone_market_purchase',{p_channel:channel,p_offer_id:offer.id,p_quantity:quantity,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerMailItemBalances(result?.itemBalances||{});if(offer.dailyLimit!=null){const daily=marketDailyState();daily.counts[offer.id]=Number(result.periodCount)||0}if(offer.weeklyLimit!=null){const weekly=marketWeeklyState(),key=offer.weeklyKey||offer.id;weekly.counts[key]=Number(result.periodCount)||0}toast(`購得「${offer.name}」${quantity>1?` × ${quantity}`:''}`);closeMarketPurchase();renderMarket(currentMarketTab);render();save()}catch(error){confirm.disabled=false;confirm.textContent='確認購買';toast(error.message)}return}
   state[offer.currencyKey]-=offer.price*quantity;state[offer.item.count]=(state[offer.item.count]||0)+quantity;
