@@ -521,6 +521,7 @@ let identityChangeItemKey=null;
 let serverPlayerStateRevision=0;
 let serverSettlementInFlight=false;
 let pendingOfflineVault=null;
+let serverResourceWalletRevision=0;
 let swordPathChoiceConfirming=false;
 let clockEpoch=Date.now(),clockPerf=performance.now(),trustedClockReady=location.protocol==='file:',clockSyncPromise=null;
 
@@ -955,7 +956,8 @@ async function ensureLeaderboardSession(forceRefresh=false){
   const response=await fetch(`${leaderboardConfig.url}/auth/v1/signup`,{method:'POST',headers:leaderboardHeaders(),body:'{}'});if(!response.ok)throw new Error('anonymous sign-in failed');return storeLeaderboardSession(await response.json());
 }
 async function playerStateRpc(name,body={},retryAuth=true){let session=await ensureLeaderboardSession(),response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)});if(response.status===401&&retryAuth){await ensureLeaderboardSession(true);return playerStateRpc(name,body,false)}const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'伺服器角色狀態暫時無法使用');return data}
-async function connectServerPlayerState(){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';const record=await playerStateRpc('player_state_bootstrap',{p_channel:channel,p_legacy_state:recoverySaveData()});serverPlayerStateRevision=Number(record?.revision)||0;if(!serverPlayerStateRevision)throw new Error('伺服器角色狀態未建立');return playerStateRpc('offline_reward_prepare',{p_channel:channel})}
+function resourceWalletMigrationPayload(){return {free:String(state.free||0),swordEssence:String(state.swordEssence||0),aura:Math.max(0,Math.floor(Number(state.aura)||0)),spiritStone:Math.max(0,Math.floor(Number(state.spiritStone)||0)),food:Math.max(0,Math.floor(Number(state.food)||0)),wood:Math.max(0,Math.floor(Number(state.wood)||0)),meteorIron:Math.max(0,Math.floor(Number(state.meteorIron)||0))}}
+async function connectServerPlayerState(){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';const record=await playerStateRpc('player_state_bootstrap',{p_channel:channel,p_legacy_state:recoverySaveData()});serverPlayerStateRevision=Number(record?.revision)||0;if(!serverPlayerStateRevision)throw new Error('伺服器角色狀態未建立');const wallet=await playerStateRpc('player_resource_wallet_bootstrap',{p_channel:channel,p_resources:resourceWalletMigrationPayload()});serverResourceWalletRevision=Number(wallet?.revision)||0;if(!serverResourceWalletRevision)throw new Error('伺服器資源帳本未建立');return playerStateRpc('offline_reward_prepare',{p_channel:channel})}
 async function claimServerSettlementTicks(){if(!sessionOnline||serverSettlementInFlight)return 0;serverSettlementInFlight=true;try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',settled=await playerStateRpc('player_state_claim_elapsed',{p_channel:channel,p_expected_revision:serverPlayerStateRevision,p_request_id:crypto.randomUUID()});serverPlayerStateRevision=Number(settled?.revision)||serverPlayerStateRevision;return Math.max(0,Math.floor(Number(settled?.elapsed_ticks??settled?.elapsed_seconds/5)||0))}catch(error){console.warn('server settlement paused',error);return 0}finally{serverSettlementInFlight=false}}
 function publicPlayerUid(userId){return userId?`WD1-${String(userId).toUpperCase()}`:''}
 async function registerFormalPlayer(session,retryAuth=true){
