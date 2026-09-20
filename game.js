@@ -1452,12 +1452,13 @@ function exitTribulationResult(){
   if(!$('#tribulationScene').classList.contains('show-result'))return;
   cleanupTribulationScene();startPathBgm();
 }
-function tribulate() {
+async function tribulate() {
   if(tribulationLocked)return;
   const {realmIndex,key,count}=currentTribulationPill(),base=tribulationBaseChance(realmIndex),foundation=qiTribulationBonus(),maxPills=Math.max(0,Math.ceil((100-base-foundation)/5)),used=Math.min(tribulationPillUseCount,count,maxPills),chance=Math.min(100,base+foundation+used*5);
-  state[key]=count-used;state.qiTribulationFocus=0;tribulationPillUseCount=0;$('#tribulationModal').classList.add('hidden');
-  const cost=req(state.spiritLevel),success=Math.random()*100<chance,scene=$('#tribulationScene'),nextRealm=realmName(state.spiritLevel+1,spiritRealms);
-  setTribulationLock(true);scene.className='tribulation-scene active gathering';scene.setAttribute('aria-hidden','false');$('#tribulationCharacter').src=characterAsset();$('#tribulationCharacter').alt='渡劫中的修士';$('#tribulationSceneRealm').textContent=`${nextRealm}・天劫`;$('#tribulationSceneText').textContent='黑雲壓境・雷霆正在雲層間尋找氣機';startBgm(success?'tribulationSuccess':'tribulationFailure');
+  const previousLevel=state.spiritLevel,scene=$('#tribulationScene'),nextRealm=realmName(previousLevel+1,spiritRealms);setTribulationLock(true);
+  let verdict;try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';verdict=await playerStateRpc('player_spirit_tribulation',{p_channel:channel,p_expected_wallet_revision:serverResourceWalletRevision,p_expected_progression_revision:serverProgressionRevision,p_request_id:crypto.randomUUID(),p_foundation_bonus:foundation,p_guard_level:Math.min(3,state.qiHeartTraits?.guard||0),p_used_pills:used});serverResourceWalletRevision=Number(verdict?.wallet?.revision)||serverResourceWalletRevision;serverProgressionRevision=Number(verdict?.progression?.revision)||serverProgressionRevision;applyServerWalletSnapshot(verdict?.wallet?.resources);applyServerProgression(verdict?.progression)}catch(error){setTribulationLock(false);toast(error.message);return}
+  const success=!!verdict.success;state[key]=count-used;state.qiTribulationFocus=0;tribulationPillUseCount=0;$('#tribulationModal').classList.add('hidden');
+  scene.className='tribulation-scene active gathering';scene.setAttribute('aria-hidden','false');$('#tribulationCharacter').src=characterAsset();$('#tribulationCharacter').alt='渡劫中的修士';$('#tribulationSceneRealm').textContent=`${nextRealm}・天劫`;$('#tribulationSceneText').textContent='黑雲壓境・雷霆正在雲層間尋找氣機';startBgm(success?'tribulationSuccess':'tribulationFailure');
   scheduleTribulation(()=>{scene.classList.add('strike-one');$('#tribulationSceneText').textContent='主雷落地・護住道心'},1100);
   scheduleTribulation(()=>{scene.classList.add('strike-two');$('#tribulationSceneText').textContent='雷罔擴張・經脈承受天威'},2400);
   scheduleTribulation(()=>{scene.classList.add('final-strike');$('#tribulationSceneText').textContent='九霄紫電貫穿雲幕・最後一擊'},3750);
@@ -1465,10 +1466,10 @@ function tribulate() {
     if(!sessionOnline){cleanupTribulationScene();return}
     scene.classList.add('show-result',success?'result-success':'result-failure');
     if(success) {
-      const gain=spiritAttributeGain(state.spiritLevel+1);state.free-=cost;state.spiritLevel++;applyAttributeGain(gain);recordQiFoundationMark();syncSectTaskRouteUnlocks('spirit');queueRealmEncounter('spirit',state.spiritLevel);
+      const gain=spiritAttributeGain(previousLevel+1);applyAttributeGain(gain);recordQiFoundationMark();syncSectTaskRouteUnlocks('spirit');queueRealmEncounter('spirit',state.spiritLevel);
       $('#tribulationResultSeal').textContent='成';$('#tribulationResultTitle').textContent='渡劫成功';$('#tribulationResultText').textContent=`境界提升至 ${realmName(state.spiritLevel,spiritRealms)}${state.spiritLevel===40&&!state.mindEmbodimentUnlocked?'・習得意念入體':''}`;
     } else {
-      const lossPercent=50-Math.min(3,state.qiHeartTraits?.guard||0)*5,loss=(cost*BigInt(lossPercent)+99n)/100n;state.free=state.free>loss?state.free-loss:0n;
+      const lossPercent=Number(verdict.loss_percent)||50;
       $('#tribulationResultSeal').textContent='敗';$('#tribulationResultTitle').textContent='渡劫失敗';$('#tribulationResultText').textContent=`雷劫傷及道基，本次修為折損 ${lossPercent}%${lossPercent<50?'・守一心護住部分根基':''}`;
     }
     render();renderQiDestination();save();
