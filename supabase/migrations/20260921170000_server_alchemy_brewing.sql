@@ -1,0 +1,32 @@
+create table if not exists private.player_crafting_daily(
+ user_id uuid not null references auth.users(id) on delete cascade,channel text not null check(channel in('formal','test')),
+ day_key date not null default (timezone('Asia/Taipei',now()))::date,brew_normal integer not null default 0 check(brew_normal between 0 and 3),brew_rare integer not null default 0 check(brew_rare between 0 and 3),updated_at timestamptz not null default now(),primary key(user_id,channel)
+);
+alter table private.player_crafting_daily enable row level security;revoke all on private.player_crafting_daily from public,anon,authenticated;
+
+create or replace function private.crafting_daily_snapshot(d private.player_crafting_daily) returns jsonb language sql stable set search_path='' as $$select jsonb_build_object('date',d.day_key,'normal',d.brew_normal,'rare',d.brew_rare)$$;
+
+create or replace function public.player_craft_consumable(p_channel text,p_kind text,p_type text,p_variant text,p_request_id uuid)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare uid uuid:=(select auth.uid());p private.player_progression_states;d private.player_crafting_daily;max_tier integer;idx integer;tier integer;quality text;herb_key text;base_key text;output_key text;herb_need integer;sand_need integer:=0;keys text[];k text;needed integer;balance bigint;items jsonb:='{}'::jsonb;today date:=(timezone('Asia/Taipei',now()))::date;
+begin
+ if uid is null then raise exception '需要重新登入';end if;if p_channel not in('formal','test') or p_kind not in('alchemy','brew') or p_type not in('yuanxi','minggu','xuanqu','youying') or p_request_id is null then raise exception '製作資料不正確';end if;
+ if exists(select 1 from private.player_state_events where user_id=uid and channel=p_channel and request_id=p_request_id) then raise exception '重複的製作請求';end if;
+ select * into p from private.player_progression_states where user_id=uid and channel=p_channel;if p.user_id is null then raise exception '伺服器修行進度尚未建立';end if;max_tier:=least(9,greatest(1,greatest(p.spirit_level,p.sword_level,p.body_level)/10+1));idx:=array_position(array['yuanxi','minggu','xuanqu','youying'],p_type);herb_key:=(array['craftHerbChiyuan','craftHerbXueyu','craftHerbJinjia','craftHerbQingling'])[idx];
+ perform pg_advisory_xact_lock(hashtext(uid::text||'-craft-'||p_channel));
+ if p_kind='alchemy' then tier:=p_variant::integer;if tier not between 1 and max_tier then raise exception '目前境界無法煉製此階丹藥';end if;herb_need:=(array[2,3,4,6,8,10,13,16,20])[tier];sand_need:=(array[1,2,3,4,5,7,9,12,15])[tier];output_key:='pillCount_'||p_type||'_'||tier;keys:=array[herb_key,'craftCinnabar'];
+ else quality:=p_variant;if quality not in('normal','rare') then raise exception '靈釀品質不正確';end if;insert into private.player_crafting_daily(user_id,channel) values(uid,p_channel) on conflict do nothing;select * into d from private.player_crafting_daily where user_id=uid and channel=p_channel for update;if d.day_key<>today then update private.player_crafting_daily set day_key=today,brew_normal=0,brew_rare=0 where user_id=uid and channel=p_channel returning * into d;end if;if (quality='normal' and d.brew_normal>=3) or (quality='rare' and d.brew_rare>=3) then raise exception '今日此品質已釀製三瓶';end if;herb_need:=case when quality='rare' then 36 else 24 end;base_key:='brewBase_'||quality;output_key:='brewCount_'||p_type||'_'||quality;keys:=array[herb_key,base_key];
+ end if;
+ foreach k in array keys loop needed:=case when k=herb_key then herb_need when k='craftCinnabar' then sand_need else 1 end;select amount into balance from private.player_mail_item_balances where user_id=uid and channel=p_channel and item_key=k for update;if coalesce(balance,0)<needed then raise exception '伺服器製作材料不足';end if;end loop;
+ foreach k in array keys loop needed:=case when k=herb_key then herb_need when k='craftCinnabar' then sand_need else 1 end;update private.player_mail_item_balances set amount=amount-needed,updated_at=now() where user_id=uid and channel=p_channel and item_key=k returning amount into balance;items:=items||jsonb_build_object(k,balance);end loop;
+ insert into private.player_mail_item_balances(user_id,channel,item_key,amount) values(uid,p_channel,output_key,1) on conflict(user_id,channel,item_key) do update set amount=private.player_mail_item_balances.amount+1,updated_at=now() returning amount into balance;items:=items||jsonb_build_object(output_key,balance);
+ if p_kind='brew' then update private.player_crafting_daily set brew_normal=brew_normal+case when quality='normal' then 1 else 0 end,brew_rare=brew_rare+case when quality='rare' then 1 else 0 end,updated_at=now() where user_id=uid and channel=p_channel returning * into d;end if;
+ insert into private.player_state_events(user_id,channel,revision,event_type,request_id,payload) values(uid,p_channel,p.revision,'consumable_crafted',p_request_id,jsonb_build_object('kind',p_kind,'type',p_type,'variant',p_variant,'output',output_key));
+ return jsonb_build_object('itemBalances',items,'daily',case when d.user_id is null then null else private.crafting_daily_snapshot(d) end,'outputKey',output_key);
+exception when invalid_text_representation or numeric_value_out_of_range then raise exception '製作資料不正確';end $$;
+
+create or replace function public.player_crafting_daily_get(p_channel text) returns jsonb language plpgsql security definer set search_path='' as $$declare uid uuid:=(select auth.uid());d private.player_crafting_daily;today date:=(timezone('Asia/Taipei',now()))::date;begin if uid is null then raise exception '需要重新登入';end if;if p_channel not in('formal','test') then raise exception '版本不正確';end if;insert into private.player_crafting_daily(user_id,channel) values(uid,p_channel) on conflict do nothing;update private.player_crafting_daily set day_key=today,brew_normal=0,brew_rare=0 where user_id=uid and channel=p_channel and day_key<>today;select * into d from private.player_crafting_daily where user_id=uid and channel=p_channel;return private.crafting_daily_snapshot(d);end $$;
+
+revoke all on function private.crafting_daily_snapshot(private.player_crafting_daily) from public,anon,authenticated;
+revoke all on function public.player_craft_consumable(text,text,text,text,uuid),public.player_crafting_daily_get(text) from public,anon;
+grant execute on function public.player_craft_consumable(text,text,text,text,uuid),public.player_crafting_daily_get(text) to authenticated;
