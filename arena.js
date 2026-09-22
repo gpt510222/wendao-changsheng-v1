@@ -24,7 +24,7 @@ function snapshot(){
   return {schema_version:3,eligible:eligible(),highest_realm:`${best.name}・${best.text}`,
     progression:{spirit_level:Math.max(0,Math.floor(state.spiritLevel||0)),sword_level:Math.max(0,Math.floor(state.swordLevel||0)),body_level:Math.max(0,Math.floor(state.bodyLevel||0))},core,
     combat_power:Math.round(Object.entries(combatPowerWeights).reduce((n,[k,w])=>n+core[k]*w,0)),
-    gender:state.gender,sword_embryo:state.swordEmbryo||'',sword_name:state.swordName||'',moves,stats,captured_at:Date.now()};
+    gender:state.gender,sword_embryo:state.swordEmbryo||'',sword_name:state.swordName||'',sword_nurture_level:state.swordNurtureLevel||0,sword_intent_type:state.swordIntentType||'',moves,stats,captured_at:Date.now()};
 }
 async function rpc(name,body={}){let session=await ensureLeaderboardSession(),response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)});if(response.status===401){session=await ensureLeaderboardSession(true);response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)})}const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'問道臺暫時無法連線');return data}
 let profileSync=null;
