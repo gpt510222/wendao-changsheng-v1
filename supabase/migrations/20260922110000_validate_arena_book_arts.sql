@@ -1,0 +1,19 @@
+create or replace function private.spirit_root_bonus(p_level integer) returns numeric language plpgsql immutable set search_path='' as $$declare total numeric:=0;begin for rank_no in 1..least(200,greatest(0,p_level)) loop total:=total+round((.5+2*(rank_no-1)/199.0)*10)/10;end loop;return round(total*10)/10;end $$;
+
+create or replace function private.server_book_art_bonus(p_user uuid,p_channel text)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare e private.player_permanent_consumable_effects;c private.player_cave_states;art_id text;m text[];kind text;element text;tier integer;lvl integer;base_value numeric;direct_value numeric;total_value numeric;root_level integer;element_pct numeric;tq numeric:=0;rb numeric:=0;ph numeric:=0;ag numeric:=0;sp numeric:=0;
+begin
+ select * into e from private.player_permanent_consumable_effects where user_id=p_user and channel=p_channel;select * into c from private.player_cave_states where user_id=p_user and channel=p_channel;
+ for art_id in select value#>>'{}' from jsonb_array_elements(coalesce(e.learned_books,'[]'::jsonb)) loop
+  if art_id='treasure-taiyang-lianshen-wujuan' then kind:='ultimate';element:='fire';tier:=9;elsif art_id='treasure-chixiao-dingming-tianjian' then kind:='fragment';element:='fire';tier:=9;else m:=regexp_match(art_id,'^artbook-(secret|formula|sutra|escape)-t([1-9])-(metal|wood|water|fire|earth)-[12]$');if m is null then continue;end if;kind:=m[1];tier:=m[2]::integer;element:=m[3];end if;
+  lvl:=least(10,greatest(1,coalesce((e.art_levels->>art_id)::integer,1)));base_value:=round((array[120,260,520,900,1400,2050,2933,3352,4800])[tier]*lvl/10.0);root_level:=case element when 'metal' then c.metal_root when 'wood' then c.wood_root when 'water' then c.water_root when 'fire' then c.fire_root else c.earth_root end;direct_value:=base_value+round(base_value*private.spirit_root_bonus(root_level)/100.0);
+  select coalesce(sum((x.value->>'value')::numeric),0) into element_pct from private.player_equipment_items i cross join lateral jsonb_array_elements(i.affixes)x where i.user_id=p_user and i.channel=p_channel and i.equipped and i.slot in('pendant','ring') and x.value->>'element'=case element when 'metal' then '金' when 'wood' then '木' when 'water' then '水' when 'fire' then '火' else '土' end;
+  total_value:=round(direct_value*(1+element_pct/100.0));if kind='secret' then tq:=tq+total_value;elsif kind='formula' then rb:=rb+total_value;elsif kind='sutra' then ph:=ph+total_value;elsif kind='escape' then ag:=ag+total_value;elsif kind='ultimate' then sp:=sp+round(total_value*.25);end if;
+ end loop;return jsonb_build_object('trueQi',tq,'rootBone',rb,'physique',ph,'agility',ag,'spiritualPower',sp);
+end $$;
+
+alter function private.arena_validate_server_progression(uuid,text,jsonb) rename to arena_validate_server_progression_components;
+create or replace function private.arena_validate_server_progression(p_user uuid,p_channel text,p_snapshot jsonb) returns void language plpgsql stable security definer set search_path='' as $$declare expected jsonb;bonus jsonb;provided jsonb;k text;begin perform private.arena_validate_server_progression_components(p_user,p_channel,p_snapshot);expected:=private.server_component_core(p_user,p_channel);bonus:=private.server_book_art_bonus(p_user,p_channel);provided:=p_snapshot->'book_core';if jsonb_typeof(provided)<>'object' then raise exception '戰鬥快照缺少伺服器功法屬性';end if;foreach k in array array['trueQi','rootBone','physique','agility','spiritualPower'] loop if coalesce((provided->>k)::numeric,-1)<>coalesce((expected->>k)::numeric,0)+coalesce((bonus->>k)::numeric,0) then raise exception '功法書屬性與伺服器紀錄不一致';end if;end loop;end $$;
+
+revoke all on function private.spirit_root_bonus(integer),private.server_book_art_bonus(uuid,text),private.arena_validate_server_progression_components(uuid,text,jsonb),private.arena_validate_server_progression(uuid,text,jsonb) from public,anon,authenticated;
