@@ -26,7 +26,7 @@ function snapshot(){
     return move;
   });
   return {schema_version:3,eligible:eligible(),highest_realm:`${best.name}・${best.text}`,
-    progression:{spirit_level:Math.max(0,Math.floor(state.spiritLevel||0)),sword_level:Math.max(0,Math.floor(state.swordLevel||0)),body_level:Math.max(0,Math.floor(state.bodyLevel||0))},base_core,component_core,book_core,sect_core,core,
+    progression:{spirit_level:Math.max(0,Math.floor(state.spiritLevel||0)),sword_level:Math.max(0,Math.floor(state.swordLevel||0)),body_level:Math.max(0,Math.floor(state.bodyLevel||0))},active_path:state.activePath||state.firstPath||'',base_core,component_core,book_core,sect_core,core,
     combat_power:Math.round(Object.entries(combatPowerWeights).reduce((n,[k,w])=>n+core[k]*w,0)),
     gender:state.gender,sword_embryo:state.swordEmbryo||'',sword_name:state.swordName||'',sword_nurture_level:state.swordNurtureLevel||0,sword_intent_type:state.swordIntentType||'',moves,stats,captured_at:Date.now()};
 }
