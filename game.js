@@ -1572,7 +1572,7 @@ function scheduleOfflineRewards(vault){
   clearTimeout(offlineRewardTimer);offlineRewardTimer=setTimeout(()=>{offlineRewardTimer=null;if(sessionOnline)showPendingOfflineRewards(vault)},180);
 }
 async function startGame() {
-  if(sessionOnline)return;finishPause();let serverSettlement;try{serverSettlement=await connectServerPlayerState();await playerMoralBootstrap();await playerEncounterSync();sessionOnline=true;await importLegacyQiRuntime();await playerQiRuntime();await playerSectBootstrap();await playerSectProgressBootstrap();await playerSectEconomy();await syncJadeGrants({notify:false})}catch(error){sessionOnline=false;show('#titleScreen');$('#titleHint').textContent='需要連線伺服器才能進入遊戲';toast(error.message);return}
+  if(sessionOnline)return;finishPause();let serverSettlement;try{serverSettlement=await connectServerPlayerState();await playerMoralBootstrap();await playerEncounterSync();sessionOnline=true;await importLegacyQiRuntime();await playerQiRuntime();await playerSectBootstrap();await playerSectProgressBootstrap();await playerSectEconomy();await playerSectShopStatus();await syncJadeGrants({notify:false})}catch(error){sessionOnline=false;show('#titleScreen');$('#titleHint').textContent='需要連線伺服器才能進入遊戲';toast(error.message);return}
   await verifyAccountOwnership();if(suppressSave)return;
   const savedLast=state.lastSave||0,savedTrusted=state.lastTrustedTime||0;
   trustedClockReady=location.protocol==='file:';
@@ -2133,6 +2133,8 @@ const sectShopGroups=[
   {id:'equipment-rare',name:'極品珍材',note:'器靈精魄每日限換 2 枚，專供極品裝備使用。',offers:[{id:'equipment-spirit-core',itemId:'equipmentSpiritCore',price:500,limit:2}]}
 ];
 function sectShopExchangeState(){const today=dateKey()||'local';if(state.sectBrewExchangeDaily?.date!==today)state.sectBrewExchangeDaily={date:today,normal:0,rare:0,counts:{}};state.sectBrewExchangeDaily.counts=state.sectBrewExchangeDaily.counts&&typeof state.sectBrewExchangeDaily.counts==='object'?state.sectBrewExchangeDaily.counts:{};state.sectBrewExchangeDaily.normal=Math.max(0,Math.floor(state.sectBrewExchangeDaily.normal||0));state.sectBrewExchangeDaily.rare=Math.max(0,Math.floor(state.sectBrewExchangeDaily.rare||0));return state.sectBrewExchangeDaily}
+function applyServerSectShop(result={}){const purchases=result.purchases&&typeof result.purchases==='object'?result.purchases:{};state.sectBrewExchangeDaily={date:String(result.day||dateKey()),normal:Number(purchases['brew-normal'])||0,rare:Number(purchases['brew-rare'])||0,counts:{...purchases}};if(result.sect)applyServerSect(result);if(result.wallet){serverResourceWalletRevision=Number(result.wallet.revision)||serverResourceWalletRevision;applyServerWalletSnapshot(result.wallet.resources)}if(result.itemBalances)applyServerMailItemBalances(result.itemBalances);return result}
+async function playerSectShopStatus(){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';return applyServerSectShop(await playerStateRpc('player_sect_shop_status',{p_channel:channel}))}
 function sectShopOfferBought(offer,record=sectShopExchangeState()){return offer.legacyKey?record[offer.legacyKey]||0:Math.max(0,Math.floor(record.counts[offer.id]||0))}
 function sectShopOfferButton(offer,bought){if(offer.unlockTier&&offer.unlockTier>productionMaxTier())return `${offer.unlockTier}階開放`;if(bought>=offer.limit)return '今日已換足';if(state.sectContribution<offer.price)return '貢獻不足';return '兌換 1 份'}
 function renderSectShop(){
@@ -2140,10 +2142,10 @@ function renderSectShop(){
   inner.innerHTML=`<section class="sect-shop"><div class="shop-heading"><small>門派設施・每日物資兌換</small><h2>功勳堂</h2><span>門派貢獻 ${formatLargeNumber(state.sectContribution)}</span></div>${sectShopGroups.map(group=>`<section class="sect-shop-group"><header><h3>${group.name}</h3><small>${group.note}</small></header><div class="sect-shop-grid">${group.offers.map(offer=>{const item=itemCatalog[offer.itemId],bought=sectShopOfferBought(offer,daily),locked=offer.unlockTier&&offer.unlockTier>productionMaxTier(),disabled=locked||bought>=offer.limit||state.sectContribution<offer.price;return `<article class="shop-item compact ${locked?'locked':''}"><img src="${item.image}" alt="${item.name}"><div class="shop-item-copy"><b>${item.name}</b><strong>門派貢獻 ${offer.price}</strong><small>持有 ${formatLargeNumber(state[item.count]||0)}・今日 ${bought}／${offer.limit}</small></div><div class="shop-actions"><button data-sect-shop-offer="${offer.id}" ${disabled?'disabled':''}>${sectShopOfferButton(offer,bought)}</button></div></article>`}).join('')}</div></section>`).join('')}</section>`;
   $$('[data-sect-shop-offer]').forEach(button=>button.onclick=()=>purchaseSectShopOffer(button.dataset.sectShopOffer));
 }
-function purchaseSectShopOffer(id){
+async function purchaseSectShopOffer(id){
   const offer=sectShopGroups.flatMap(group=>group.offers).find(entry=>entry.id===id);if(!offer)return;const item=itemCatalog[offer.itemId],record=sectShopExchangeState(),bought=sectShopOfferBought(offer,record);
   if(offer.unlockTier&&offer.unlockTier>productionMaxTier())return toast(`三路最高達第 ${offer.unlockTier} 大境界後開放`);if(bought>=offer.limit)return toast(`${item.name}今日已達兌換上限`);if(state.sectContribution<offer.price)return toast('門派貢獻不足');if(!canStoreItem(offer.itemId))return toast('儲物袋已滿');
-  state.sectContribution-=offer.price;state[item.count]=(state[item.count]||0)+1;if(offer.legacyKey)record[offer.legacyKey]=(record[offer.legacyKey]||0)+1;else record.counts[offer.id]=(record.counts[offer.id]||0)+1;save();renderSectShop();render();toast(`兌得${item.name} ×1`);
+  try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test';applyServerSectShop(await playerStateRpc('player_sect_shop_purchase',{p_channel:channel,p_offer_id:id,p_request_id:crypto.randomUUID()}));save();renderSectShop();render();toast(`兌得${item.name} ×1`)}catch(error){toast(error.message);await playerSectShopStatus().catch(()=>{});renderSectShop()}
 }
 function registerEquipmentItems(){(state.equipmentInventory||[]).forEach(e=>{const key=`equipment-${e.id}`,slot=equipmentSlots.find(x=>x[0]===e.slot),stat=e.affixes?.length?e.affixes.map(x=>`${x.element}系功法效果 +${x.value.toFixed(1)}%`).join('、'):`${e.label}+${e.value}`;itemCatalog[key]={name:`${e.quality==='rare'?'極品':'凡品'}·${equipmentSets[e.tier-1]}${slot[1]}`,image:`assets/qstyle-v2/production/equipment/${e.slot}-t${e.tier}.png`,description:`器室製成的${equipmentSets[e.tier-1]}階${slot[1]}。${stat}`,count:`equipmentCount_${e.id}`,usable:true,giftable:false,sellPrice:1,equipmentData:e};if(state[`equipmentCount_${e.id}`]==null)state[`equipmentCount_${e.id}`]=1})}
 function applyServerEquipment(snapshot={}){serverEquipmentRevision=Number(snapshot.revision)||serverEquipmentRevision;const items=Array.isArray(snapshot.items)?snapshot.items:[],prior=state.equipmentInventory||[];for(const e of prior)state[`equipmentCount_${e.id}`]=0;state.equipmentInventory=items.map(e=>({id:String(e.id),slot:e.slot,tier:Number(e.tier),quality:e.quality,label:equipmentSlots.find(x=>x[0]===e.slot)?.[3]||'',value:Number(e.value)||0,affixes:Array.isArray(e.affixes)?e.affixes.map(a=>({element:a.element,value:Number(a.value)||0})):[]}));state.equippedItems={};items.forEach(e=>{state[`equipmentCount_${e.id}`]=e.equipped?0:1;if(e.equipped)state.equippedItems[e.slot]=String(e.id)});registerEquipmentItems();return snapshot}
@@ -2626,14 +2628,14 @@ function renderCaveView(view){
   $('#buyDaoChild').onclick=buyDaoChild;
 }
 async function assignWorker(key,change){const a=caveAreas[key];if(!a)return;try{await playerCaveCommand(change>0?'assign_add':'assign_remove',key);renderCaveView('production');save()}catch(error){toast(error.message)}}
-async function buyDaoChild(){const cost=daoChildCost();if(state.food<cost)return toast('食物不足');try{await playerCaveCommand('buy_child');state.food=Math.max(0,state.food-cost);toast('新道童前來投效');renderCaveView('production');render();save()}catch(error){toast(error.message)}}
-async function upgradeCaveArea(key){const a=caveAreas[key];if(!a)return;const cost=areaUpgradeCost(a);if(state.wood<cost.wood||state.food<cost.food)return toast('擴建所需資源不足');try{await playerCaveCommand('upgrade_area',key);state.wood=Math.max(0,state.wood-cost.wood);state.food=Math.max(0,state.food-cost.food);toast(`${a.label}區域提升 1 級・目前 ${state[a.level]} 級`);renderCaveView('production');render();save()}catch(error){toast(error.message)}}
+async function buyDaoChild(){const cost=daoChildCost();if(state.food<cost)return toast('食物不足');try{await playerCaveCommand('buy_child');toast('新道童前來投效');renderCaveView('production');render();save()}catch(error){toast(error.message)}}
+async function upgradeCaveArea(key){const a=caveAreas[key];if(!a)return;const cost=areaUpgradeCost(a);if(state.wood<cost.wood||state.food<cost.food)return toast('擴建所需資源不足');try{await playerCaveCommand('upgrade_area',key);toast(`${a.label}區域提升 1 級・目前 ${state[a.level]} 級`);renderCaveView('production');render();save()}catch(error){toast(error.message)}}
 async function toggleCaveFacility(key){
   const facility=caveFacilities[key];if(!facility)return;if(key==='sword'&&!state.swordEmbryo)return toast('凝聚本命劍後才能開啟洗劍池');if(key==='body'&&!state.bodyPathOpened)return toast('開啟煉體之路後才能使用鍛體室');
   try{await playerCaveControl('toggle_facility',key);renderCaveView('dwelling');save()}catch(error){toast(error.message)}
 }
-async function upgradeCaveCore(){const cost=caveCoreUpgradeCost();if(state.caveCoreLevel>=7)return;if(state.spiritStone<cost.stone||state.wood<cost.wood||state.meteorIron<cost.iron)return toast('洞府靈脈升階材料不足');try{await playerCaveControl('upgrade_core');state.spiritStone-=cost.stone;state.wood-=cost.wood;state.meteorIron-=cost.iron;toast(`洞府靈脈提升至${state.caveCoreLevel}階・供應上限增加`);renderCaveView('dwelling');render();save()}catch(error){toast(error.message)}}
-async function upgradeCaveFacility(key){const facility=caveFacilities[key];if(!facility||state[facility.level]>=7)return;const cost=caveFacilityUpgradeCost(key);if(state.spiritStone<cost.stone||state.wood<cost.wood||state.meteorIron<cost.iron)return toast('修行房間升級材料不足');try{await playerCaveControl('upgrade_facility',key);state.spiritStone-=cost.stone;state.wood-=cost.wood;state.meteorIron-=cost.iron;toast(`${facility.label}提升至${state[facility.level]}級`);renderCaveView('dwelling');render();save()}catch(error){toast(error.message)}}
+async function upgradeCaveCore(){const cost=caveCoreUpgradeCost();if(state.caveCoreLevel>=7)return;if(state.spiritStone<cost.stone||state.wood<cost.wood||state.meteorIron<cost.iron)return toast('洞府靈脈升階材料不足');try{await playerCaveControl('upgrade_core');toast(`洞府靈脈提升至${state.caveCoreLevel}階・供應上限增加`);renderCaveView('dwelling');render();save()}catch(error){toast(error.message)}}
+async function upgradeCaveFacility(key){const facility=caveFacilities[key];if(!facility||state[facility.level]>=7)return;const cost=caveFacilityUpgradeCost(key);if(state.spiritStone<cost.stone||state.wood<cost.wood||state.meteorIron<cost.iron)return toast('修行房間升級材料不足');try{await playerCaveControl('upgrade_facility',key);toast(`${facility.label}提升至${state[facility.level]}級`);renderCaveView('dwelling');render();save()}catch(error){toast(error.message)}}
 function runCaveFacilities(ticks){
   if(ticks<=0||!state.cultivationAwakened)return;
   if(state.caveSwordEnabled&&state.swordEmbryo&&state.swordPathOpened)state.swordEssence+=BigInt(Math.floor(ticks*swordEssenceRate()*(.08+state.caveSwordLevel*.02)));
@@ -2687,12 +2689,12 @@ async function upgradeSpiritRoot(key) {
   const e=elementData[key],level=state[e.root],cost=spiritRootReq(level);
   if(level>=200)return toast(`${e.label}系靈根已達天道・10階`);
   if(state.aura<cost)return toast(`尚缺 ${formatLargeNumber(cost-state.aura)} 靈氣`);
-  try{await playerCaveControl('upgrade_root',key);state.aura-=cost;toast(`${e.label}系靈根提升至${rootRank(state[e.root])}・白值 +${spiritRootBonus(state[e.root]).toFixed(1)}%`);renderSpiritRootView('root');render();save()}catch(error){toast(error.message)}
+  try{await playerCaveControl('upgrade_root',key);toast(`${e.label}系靈根提升至${rootRank(state[e.root])}・白值 +${spiritRootBonus(state[e.root]).toFixed(1)}%`);renderSpiritRootView('root');render();save()}catch(error){toast(error.message)}
 }
 async function upgradeSpiritPool() {
   const woodCost=poolWoodCost(),ironCost=poolIronCost();
   if(state.wood<woodCost||state.meteorIron<ironCost)return toast('升階材料不足');
-  try{await playerCaveCommand('upgrade_pool');state.wood-=woodCost;state.meteorIron-=ironCost;toast(`靈池提升至${state.spiritPoolLevel}階`);renderSpiritRootView('pool');save()}catch(error){toast(error.message)}
+  try{await playerCaveCommand('upgrade_pool');toast(`靈池提升至${state.spiritPoolLevel}階`);renderSpiritRootView('pool');save()}catch(error){toast(error.message)}
 }
 
 function renderBagPanel(view='bag') {
