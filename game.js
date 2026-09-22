@@ -1306,11 +1306,10 @@ function renderNoviceCultivation(){
   if(ready){button.disabled=breakthroughInProgress;button.setAttribute('aria-label','突破至聽息一層');}
   else if(!manualCultivationStartedAt){button.disabled=false;button.classList.remove('channeling');$('#manualCultivateLabel').textContent='修練';$('#manualCultivateHint').textContent=`凝神吐納 5 秒・可得 ${rate()} 修為`;$('#manualCultivateBar').style.width='0%'}
 }
-function finishManualCultivation(){
+async function finishManualCultivation(){
   clearInterval(manualCultivationTimer);manualCultivationTimer=null;manualCultivationStartedAt=0;
   if(state.cultivationAwakened)return;
-  const amount=BigInt(rate());state.free+=amount;state.totalEarned+=amount;playTone();render();save();
-  if(state.free<noviceCultivationNeed)toast(`吐納完成・修為+${formatLargeNumber(amount)}`);
+  try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_novice_cultivate',{p_channel:channel,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;serverProgressionRevision=Number(result?.progression?.revision)||serverProgressionRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerProgression(result?.progression);playTone();render();save();if(state.free<noviceCultivationNeed)toast(`吐納完成・修為+${formatLargeNumber(result?.gain||0)}`)}catch(error){toast(error.message);render()}
 }
 function beginManualCultivation(){
   if(state.cultivationAwakened||manualCultivationStartedAt||breakthroughInProgress)return;
@@ -1324,10 +1323,10 @@ function openFirstPathChoice(){
   modal.innerHTML=`<section class="first-path-window"><small>新手突破・三途問心</small><h2>此身先行何道</h2><p>此次選擇決定主介面的最初道場，並非永久職業。完成入道後，仍可在「兼修」開啟另外兩路，亦可三道同修。</p><div class="first-path-grid">${Object.entries(cultivationPathMeta).map(([id,item])=>`<button data-first-path="${id}" class="first-path-card path-${id}" style="--path-scene:url('${item.scene}')"><b>${item.name}之路</b><em>${item.realm}・以${item.resource}修行</em><small>${item.description}</small><i>選此道入門</i></button>`).join('')}</div></section>`;
   modal.classList.add('show');$$('[data-first-path]').forEach(button=>button.onclick=()=>chooseFirstPath(button.dataset.firstPath));
 }
-function chooseFirstPath(path){
+async function chooseFirstPath(path){
   if(!cultivationPathMeta[path])return;
   if(state.firstPath){$('#firstPathModal')?.classList.remove('show');render();save();return}
-  state.free=state.free>=noviceCultivationNeed?state.free-noviceCultivationNeed:0n;state.firstPath=path;state.activePath=path;state.cultivationAwakened=true;state.tutorialCompleted=true;state.spiritPathOpened=path==='spirit';state.swordPathOpened=path==='sword';state.bodyPathOpened=path==='body';syncSectTaskRouteUnlocks(path);
+  try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_novice_awaken',{p_channel:channel,p_path:path,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;serverProgressionRevision=Number(result?.progression?.revision)||serverProgressionRevision;serverCaveRevision=Number(result?.cave_revision)||serverCaveRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerProgression(result?.progression)}catch(error){toast(error.message);return}state.firstPath=path;state.activePath=path;state.tutorialCompleted=true;syncSectTaskRouteUnlocks(path);
   state.swordMoves=path==='body'?['body-origin']:['origin'];breakthroughInProgress=false;$('#heroArt').classList.remove('breakthrough-absorb');$('#firstPathModal')?.classList.remove('show');render();startPathBgm(path);save();toast(`已踏入${cultivationPathMeta[path].name}之路・其餘兩道可於兼修開啟`);
   if(path==='sword')setTimeout(()=>openPrimarySwordView('sword'),350);
 }
