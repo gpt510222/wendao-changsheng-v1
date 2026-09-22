@@ -10,6 +10,7 @@ function snapshot(){
   // Comprehension and fortune are not combat attributes; learned bonuses to
   // spiritualPower remain part of the displayed spiritualPower value.
   const core=Object.fromEntries(['rootBone','trueQi','physique','agility','spiritualPower'].map(k=>[k,effectiveCore(k)]));
+  const base_core=Object.fromEntries(['rootBone','trueQi','physique','agility','spiritualPower'].map(k=>[k,Math.max(0,Number(state.serverBaseCore?.[k])||0)+(['rootBone','trueQi','physique','agility'].includes(k)?Math.max(0,Number(state.serverPermanentAttributeBonuses?.[k])||0)+Math.max(0,Number(state.serverAscensionAllocations?.[k])||0):0)]));
   const stats=battlePlayerStats(),best=highestRealm(),marks=swordPathMarkCounts(),realm=swordRealmProfile();
   const moves=equippedCombatTechniques().slice(0,2).map((m,i)=>{
     const move={...m};
@@ -22,7 +23,7 @@ function snapshot(){
     return move;
   });
   return {schema_version:3,eligible:eligible(),highest_realm:`${best.name}・${best.text}`,
-    progression:{spirit_level:Math.max(0,Math.floor(state.spiritLevel||0)),sword_level:Math.max(0,Math.floor(state.swordLevel||0)),body_level:Math.max(0,Math.floor(state.bodyLevel||0))},core,
+    progression:{spirit_level:Math.max(0,Math.floor(state.spiritLevel||0)),sword_level:Math.max(0,Math.floor(state.swordLevel||0)),body_level:Math.max(0,Math.floor(state.bodyLevel||0))},base_core,core,
     combat_power:Math.round(Object.entries(combatPowerWeights).reduce((n,[k,w])=>n+core[k]*w,0)),
     gender:state.gender,sword_embryo:state.swordEmbryo||'',sword_name:state.swordName||'',sword_nurture_level:state.swordNurtureLevel||0,sword_intent_type:state.swordIntentType||'',moves,stats,captured_at:Date.now()};
 }
