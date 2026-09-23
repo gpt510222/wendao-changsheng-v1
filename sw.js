@@ -2,7 +2,8 @@ const REVISIONS = __ASSET_REVISIONS__;
 const APP_SHELL = __APP_SHELL__;
 const CORE_ASSETS = __CORE_ASSETS__;
 const VISUAL_ASSETS = __VISUAL_ASSETS__;
-const CACHE_NAME = 'wendao-revision-cache-v1';
+const CACHE_NAME = 'wendao-formal-revision-cache-v2';
+const LEGACY_SHARED_CACHE = 'wendao-revision-cache-v1';
 const REVISION_PARAM = '__wendao_revision';
 const NETWORK_FIRST_ASSETS = new Set(['index.html','arena.js','cangji.js','immortal-potential-system.js','game.js','production-rows.js','partner-system.js','styles.css','q-style.css','production-fix.css']);
 
@@ -49,6 +50,7 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
+    await caches.delete(LEGACY_SHARED_CACHE);
     const cache = await caches.open(CACHE_NAME);
     for (const request of await cache.keys()) {
       const url = new URL(request.url);
