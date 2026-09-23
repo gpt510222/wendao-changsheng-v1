@@ -74,3 +74,6 @@ revoke execute on function public.delete_recovery_backup() from public,anon;
 grant execute on function public.save_recovery_backup(text,jsonb) to authenticated;
 grant execute on function public.recover_formal_account(text) to authenticated;
 grant execute on function public.delete_recovery_backup() to authenticated;
+
+-- 帳號移轉必須經過 Edge Function 的 IP 與帳號限流，不允許瀏覽器直接呼叫舊恢復函式。
+revoke execute on function public.recover_formal_account(text) from public,anon,authenticated;
