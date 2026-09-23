@@ -818,7 +818,6 @@ const bodyBreakthroughAreaLevels=[6,14,23,30,30];
 function bodyTrialRequired(nextLevel=state.bodyLevel+1){return bodyTrialLevels.includes(nextLevel)}
 function bodyBreakthroughRequirement(){return null}
 function bodyBreakthroughMaterialsReady(requirement=bodyBreakthroughRequirement()){return !requirement||state.food>=requirement.food&&state.wood>=requirement.wood&&state.meteorIron>=requirement.iron&&state.foodAreaLevel>=requirement.areaLevel&&state.woodAreaLevel>=requirement.areaLevel&&state.meteorIronAreaLevel>=requirement.areaLevel}
-function consumeBodyBreakthroughMaterials(requirement=bodyBreakthroughRequirement()){if(!requirement)return;state.food-=requirement.food;state.wood-=requirement.wood;state.meteorIron-=requirement.iron}
 function bodyRealmCostMultiplier(){const realm=bodyRealmIndex()+1,n=realm-1;return 1+.12*n+.018*n*n}
 function bodyNutritionCapacity(){return Math.ceil(700*bodyRealmCostMultiplier())+(state.caveBodyEnabled?state.caveBodyLevel*250:0)}
 function bodyTrainingOptions(){const factor=state.caveBodyEnabled?Math.max(.75,1-state.caveBodyLevel*.03):1,m=bodyRealmCostMultiplier(),cost=value=>Math.ceil(value*m*factor),injuryReduction=(bodyPassiveUnlocked(3)?10:0)+(state.caveBodyEnabled?state.caveBodyLevel*2:0),load=Math.floor(state.bodyTrainingLoad||0);return {
@@ -1289,11 +1288,6 @@ async function deleteCurrentMail(){
   if(mail.attachments?.length&&!mail.claimed){await gameConfirm('此信尚有未領取附件，請先領取附件後再刪除信件。',{title:'無法刪除信件',confirmText:'我知道了'});return}
   if(!await gameConfirm(`確定刪除「${mail.subject}」？`,{title:'刪除信件',confirmText:'確認刪除',danger:true}))return;
   state.mailbox=mailbox().filter(entry=>entry.id!==currentMailId);closeMailDetail();renderMailbox();renderMailButton();save();
-}
-function addCultivation(amount,silent=false) {
-  const gain=toBigInt(amount);state.free+=gain;state.totalEarned+=gain;
-  if(!silent&&isPureCultivationView())toast(`修為+${formatLargeNumber(amount)}`,'cultivation');
-  render(); save();
 }
 function updateMainlineButton(){
   const button=$('#mainlineButton');if(!button)return;const awakened=!!state.cultivationAwakened;
@@ -2002,7 +1996,7 @@ function renderArtsPanel(view='sect',preserveScroll=false){
   $$('[data-art-upgrade]').forEach(button=>button.onclick=()=>upgradeArt(button.dataset.artUpgrade,view));$$('[data-art-convert]').forEach(button=>button.onclick=()=>convertSectArt(button.dataset.artConvert,view));$$('[data-art-forget]').forEach(button=>button.onclick=()=>forgetArt(button.dataset.artForget,view));
   if(preserveScroll){description.scrollTop=savedScrollTop;description.scrollLeft=savedScrollLeft;inner.scrollTop=savedArtsScroll;if(bookTabs)bookTabs.scrollLeft=savedTabScroll}
 }
-async function upgradeArt(id,view){const art=state.learnedArts.find(item=>item.id===id);if(!art||art.level>=10)return;const cost=artUpgradeCost(art);if(state.aura<cost)return toast('靈氣不足');if(art.source==='book'){try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_book_art_upgrade',{p_channel:channel,p_art_id:id,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerPermanentConsumables(result?.effects||{})}catch(error){toast(error.message);return}}else if(art.sourceSect){try{await serverSectArtCommand('upgrade',art)}catch(error){toast(error.message);return}}else{state.aura-=cost;art.level++}const updated=state.learnedArts.find(item=>item.id===id),newlyMastered=allBookArtsMastered()&&!(state.unlockedTitles||[]).includes('all-arts-master');syncTitleUnlocks();toast(newlyMastered?'萬法圓滿・獲得稱號「萬法歸宗」・道悟與天契永久＋500':`${updated?.name||art.name}提升至${updated?.level||art.level}級`);renderArtsPanel(view,true);render();save()}
+async function upgradeArt(id,view){const art=state.learnedArts.find(item=>item.id===id);if(!art||art.level>=10)return;const cost=artUpgradeCost(art);if(state.aura<cost)return toast('靈氣不足');if(art.source==='book'){try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_book_art_upgrade',{p_channel:channel,p_art_id:id,p_request_id:crypto.randomUUID()});serverResourceWalletRevision=Number(result?.wallet?.revision)||serverResourceWalletRevision;applyServerWalletSnapshot(result?.wallet?.resources);applyServerPermanentConsumables(result?.effects||{})}catch(error){toast(error.message);return}}else if(art.sourceSect){try{await serverSectArtCommand('upgrade',art)}catch(error){toast(error.message);return}}else{return toast('此功法未通過伺服器登記，已阻止升級')}const updated=state.learnedArts.find(item=>item.id===id),newlyMastered=allBookArtsMastered()&&!(state.unlockedTitles||[]).includes('all-arts-master');syncTitleUnlocks();toast(newlyMastered?'萬法圓滿・獲得稱號「萬法歸宗」・道悟與天契永久＋500':`${updated?.name||art.name}提升至${updated?.level||art.level}級`);renderArtsPanel(view,true);render();save()}
 async function convertSectArt(id,view='sect'){const index=state.learnedArts.findIndex(item=>item.id===id),oldArt=state.learnedArts[index],replacement=sectTechniqueReplacement(oldArt);if(index<0||!oldArt?.legacySectTechnique||!sectTechniqueChanged(oldArt,replacement))return;const oldKind=artKinds[oldArt.kind],newKind=artKinds[replacement.kind],oldElement=artElements.find(([key])=>key===oldArt.element)?.[1]||'',newElement=artElements.find(([key])=>key===replacement.element)?.[1]||'',accepted=await gameConfirm(`確定將舊傳承「${oldArt.name}」免費轉換為「${replacement.name}」？\n\n轉換前：${oldElement}系・${oldKind.tab}・${oldKind.label}\n轉換後：${newElement}系・${newKind.tab}・${newKind.label}\n\n保留：${['一','二','三','四','五','六','七','八','九'][replacement.tier-1]}階、${oldArt.level}級\n轉換後無法恢復舊傳承。`,{title:'免費轉換門派功法',confirmText:'確認轉換'});if(!accepted)return;state.learnedArts[index]={...replacement,level:oldArt.level,legacySectTechnique:false};toast(`已轉換為${replacement.name}・保留${oldArt.level}級`);renderArtsPanel(view);render();save()}
 async function forgetArt(id,view='sect'){const index=state.learnedArts.findIndex(item=>item.id===id);if(index<0)return;const art=state.learnedArts[index],kind=artKinds[art.kind],skill=art.kind==='sectSkill',lost=skill?0:artTotalEffect(art),sharp=skill?0:artSecondarySpiritualPower(art),warning=skill?'遺忘後將無法在戰鬥招式中裝配，重新加入原門派並達到學習職位後可再次習得。':`將失去 ${kind.label}+${lost.toLocaleString()}${sharp?`、銳識+${sharp.toLocaleString()}`:''}，已投入的靈氣不會返還。`;if(!await gameConfirm(`確定遺忘「${art.name}」？\n${warning}`,{title:'遺忘功法',confirmText:'確認遺忘',danger:true}))return;if(art.sourceSect){try{await serverSectArtCommand('forget',art)}catch(error){toast(error.message);return}}else state.learnedArts.splice(index,1);state.swordMoves=(state.swordMoves||[]).filter(moveId=>moveId!==id);if(!state.swordMoves.length)state.swordMoves=['origin'];toast(`已遺忘${art.name}${skill?'':`・${kind.label}-${lost}${sharp?`・銳識-${sharp}`:''}`}`);renderArtsPanel(view);render();save()}
 function updateArtsLive(){if(currentFeature!=='arts')return;const amount=$('#artsAuraAmount');if(amount)amount.textContent=`當前靈氣 ${formatLargeNumber(state.aura)}`;$$('[data-art-upgrade]').forEach(button=>{const art=state.learnedArts.find(item=>item.id===button.dataset.artUpgrade);button.disabled=!art||art.level>=10||state.aura<+button.dataset.artCost})}
@@ -2053,15 +2047,7 @@ function resolvedSectTask(task){if(!task)return null;const path=state.sectTaskRo
 function selectedSectTask(){let task=sectTasks.find(x=>x.id===state.sectTask);if(task&&task.realm>highestSectTaskRealm()){task=sectTasks.filter(entry=>entry.realm<=highestSectTaskRealm()).at(-1);state.sectTask=task?.id||''}return task?resolvedSectTask(task):null}
 function sectTaskPathGain(task=selectedSectTask()){return task?Math.min(3,1+Math.floor((task.realm-1)/4)):1}
 function sectTaskAnnualGain(task=selectedSectTask()){return task?Math.min(50,Math.floor(task.gain*(1+sectExperienceBonus()))):0}
-function processSectYears(){
-  if(sessionOnline)return false;
-  if(!state.sect||!state.sectJoinedAt)return false;
-  const total=Math.floor((gameNow()-state.sectJoinedAt)/900000),delta=Math.max(0,total-state.sectYearsProcessed);
-  if(!delta)return false;
-  state.sectYearsProcessed=total;
-  const task=selectedSectTask(),pathGain=delta*(task?sectTaskPathGain(task):1);if(state.sectFaction==='正')state.righteousness+=pathGain;else state.evilQi+=pathGain;
-  if(task){const sectGain=sectTaskAnnualGain(task)*delta;state.sectMerit+=sectGain;state.sectContribution+=sectGain;state.spiritStone+=task.stone*delta;state.prestige+=task.prestige*delta;syncCurrentSectRecord()}return true;
-}
+function processSectYears(){return false}
 function sectDescription(){
   const index=npcSeed(),places=['青峰疊翠的雲海深處','千瀑交織的靈谷之中','終年星輝垂落的高原','古木遮天的幽靜山脈','浩蕩天河環繞的浮島','地火與寒泉交會的秘境','萬丈孤峰之巔','遠離塵世的上古洞天','雷雲不散的天外山門','潮汐靈脈匯聚的海崖','日月同輝的仙家福地'];
   const practices=['擅長以劍意磨礪道心','精研丹道與靈藥培育','傳承符籙、陣法與禁制之術','重視肉身與元息並行淬鍊','以觀星推演尋求大道軌跡','修習御風踏雲與行章妙法','守護古老典籍與失傳玄錄','講究在生死歷練中突破桎梏','以五行流轉淬鍊門人根基','世代鎮守一處危險的天地裂隙','崇尚萬法歸一、道心澄明'];
@@ -2646,26 +2632,6 @@ async function toggleCaveFacility(key){
 }
 async function upgradeCaveCore(){const cost=caveCoreUpgradeCost();if(state.caveCoreLevel>=7)return;if(state.spiritStone<cost.stone||state.wood<cost.wood||state.meteorIron<cost.iron)return toast('洞府靈脈升階材料不足');try{await playerCaveControl('upgrade_core');toast(`洞府靈脈提升至${state.caveCoreLevel}階・供應上限增加`);renderCaveView('dwelling');render();save()}catch(error){toast(error.message)}}
 async function upgradeCaveFacility(key){const facility=caveFacilities[key];if(!facility||state[facility.level]>=7)return;const cost=caveFacilityUpgradeCost(key);if(state.spiritStone<cost.stone||state.wood<cost.wood||state.meteorIron<cost.iron)return toast('修行房間升級材料不足');try{await playerCaveControl('upgrade_facility',key);toast(`${facility.label}提升至${state[facility.level]}級`);renderCaveView('dwelling');render();save()}catch(error){toast(error.message)}}
-function runCaveFacilities(ticks){
-  if(ticks<=0||!state.cultivationAwakened)return;
-  if(state.caveSwordEnabled&&state.swordEmbryo&&state.swordPathOpened)state.swordEssence+=BigInt(Math.floor(ticks*swordEssenceRate()*(.08+state.caveSwordLevel*.02)));
-  state.caveBodyTicks=0;
-}
-function runSettlementTick(ticks=1){
-  for(let i=0;i<ticks;i++){
-    const foodArea=caveAreas.food,foodWorkers=Math.min(state.workerFood,areaWorkerMax(foodArea)),foodCapacity=areaCapacity(foodArea),foodOutput=areaOutput(foodArea);
-    if(state.food<foodCapacity)state.food=Math.min(foodCapacity,state.food+foodWorkers*foodOutput);
-    for(const key of ['wood','meteorIron']){
-      const a=caveAreas[key],output=areaOutput(a),room=Math.max(0,areaCapacity(a)-state[a.value]),workers=Math.min(state[a.worker],areaWorkerMax(a));
-      const possible=Math.min(workers,Math.floor(room/output),a.foodCost?Math.floor(state.food/a.foodCost):workers);
-      if(possible>0){state.food-=possible*a.foodCost;state[a.value]+=possible*output}
-    }
-  }
-  runCaveFacilities(ticks);
-  const priorBodyMode=state.bodyTrainingMode,bodyCycles=processBodyTrainingCycles();
-  if((bodyCycles||priorBodyMode!==state.bodyTrainingMode)&&document.querySelector('.body-training-grid'))renderBodyDestination('training');
-}
-
 const elementData = {
   metal:{label:'金',root:'metalRoot',art:'metalArt',icon:'assets/qstyle-v2/element-metal.png'},
   wood:{label:'木',root:'woodRoot',art:'woodArt',icon:'assets/qstyle-v2/element-wood.png'},
