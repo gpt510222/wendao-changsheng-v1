@@ -847,23 +847,7 @@ function blockDuringTribulation(event){
 ['click','dblclick','pointerdown','pointerup','touchstart','touchend','keydown','keyup'].forEach(type=>document.addEventListener(type,blockDuringTribulation,true));
 let serverYearsAnchor=null,serverYearsAnchoredAt=0;
 function experiencedYears(){if(serverYearsAnchor!=null)return Math.max(0,Math.floor(serverYearsAnchor+(gameNow()-serverYearsAnchoredAt)/900000));return state.bornAt?Math.max(0,Math.floor((gameNow()-state.bornAt)/900000)):0}
-const encounterYearMilestones=[10,30,50,100,300,500,1000];
-const encounterRewardPool=['mainlineFoodBag','mainlineWoodBag','mainlineIronBag','main-material-xuansi','main-material-xuanjuan','main-material-xuanpi'];
-const encounterScenes=[
-  {title:'雨夜古亭',text:'山雨封路，亭中一名負傷散修護著半袋物資，遠處追兵的火把正穿過雨幕。',actions:['替他引開追兵','取走無主之物','辨明因果再處置']},
-  {title:'枯井劍鳴',text:'荒村枯井每逢夜半便傳出劍鳴。井底既有殘劍，也纏著多年未散的怨念。',actions:['封存怨念安撫亡魂','吞納怨氣淬礪己身','參悟劍痕後悄然離去']},
-  {title:'山祠餘火',text:'傾圮山祠中尚有一點香火，兩名旅人正為僅存的乾糧爭執不休。',actions:['分糧勸和','以威勢奪取供物','各取所需不問善惡']},
-  {title:'古道遺囊',text:'古道旁留著一只染塵行囊，內有修行物資，也有一封尚未送達的家書。',actions:['送還行囊與家書','留下物資焚去書信','先送信再收取酬勞']},
-  {title:'月下問劍',text:'無名劍客攔在月下，只問你出劍是為護人、勝人，還是見證萬般變化。',actions:['劍為止戈','劍為爭勝','劍隨本心']},
-  {title:'渡口妖影',text:'夜渡將開，船家說水下有妖。岸邊富戶願出重金先行，流民卻無力付費。',actions:['護送眾人一同渡河','收下重金只護富戶','先查水勢另尋生路']}
-];
-function encounterChoice(path,label,reward,amount,tier){const moral=path==='righteous'?{righteousness:3}:path==='evil'?{evilQi:3}:{righteousness:1,evilQi:1};return {path,label,moral,rewards:[{item:reward,amount:Math.max(1,amount)}],result:path==='righteous'?'你守住了心中準則，也得了一份善緣。':path==='evil'?'你以利刃奪得機緣，煞氣也隨之沉入道心。':'你未執一端，在因果之間取得了自己的答案。',tier}}
-function makeEncounter(kind='random',year=experiencedYears()){
-  const scene=kind==='year'?encounterScenes[encounterYearMilestones.indexOf(year)%encounterScenes.length]:encounterScenes[Math.floor(Math.random()*encounterScenes.length)],tier=worldProgressTier(),scale=Math.max(2,Math.min(40,Math.floor(year/20)+tier*2)),reward=encounterRewardPool[(year+state.encounterSerial)%encounterRewardPool.length],pill=`tribPill${Math.max(1,Math.min(8,tier))}`,id=`${kind}-${year}-${++state.encounterSerial}`;
-  return {id,kind,year,title:kind==='year'?`${year}年・${scene.title}`:scene.title,text:scene.text,choices:[encounterChoice('righteous',scene.actions[0],reward,scale,tier),encounterChoice('evil',scene.actions[1],pill,Math.max(1,Math.ceil(tier/3)),tier),encounterChoice('balance',scene.actions[2],reward,Math.max(1,Math.ceil(scale*.7)),tier)]};
-}
 function queueRealmEncounter(path,level){if(level%10!==0||!sessionOnline)return;playerEncounterSync().catch(error=>console.warn('encounter sync paused',error))}
-function queueEncounter(event){if(!event||state.encounterQueue.length>=12)return false;state.encounterQueue.push(event);updateEncounterButton();return true}
 async function processEncounterTriggers(){if(!state.name||!state.cultivationAwakened)return;partnerProcess(experiencedYears());if(sessionOnline)try{await playerEncounterSync()}catch(error){console.warn('encounter sync paused',error)}updateEncounterButton();updateArtifactTombButton()}
 function encounterRewardText(choice){return choice.rewards.map(reward=>`${itemCatalog[reward.item]?.name||reward.item} ×${reward.amount}`).join('、')}
 const artifactCatalog=[
