@@ -2039,10 +2039,9 @@ async function joinSect(pick,bypassCooldown=false,invitationKey=null){
   const returning=!!state.sectRecords?.[pick.name];try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_sect_membership',{p_channel:channel,p_action:'join',p_sect_name:pick.name,p_invitation_key:invitationKey,p_request_id:crypto.randomUUID()});restoreSectRecord(pick);applyServerSect(result);applyServerMailItemBalances(result?.itemBalances||{})}catch(error){toast(error.message);return false}state.sectSearchAvailableAt=0;
   toast(`${returning?'重返':'拜入'}${['一','二','三','四','五','六','七','八','九'][pick.star-1]}星門派・${pick.name}`);render();if(currentFeature==='sect')renderSectPanel('home');save();return true;
 }
-function joinRandomSect(){
+async function joinRandomSect(){
   if(gameNow()<(state.sectSearchAvailableAt||0))return toast(`門派尋訪尚需等待 ${Math.ceil(((state.sectSearchAvailableAt||0)-gameNow())/900000)} 個修練年`);
-  const pool=allEligibleSects().flatMap(pick=>{const record=state.sectRecords?.[pick.name],weight=!record?3:record.discovery==='unknown'||record.discovery==='hinted'?2:1;return Array.from({length:weight},()=>pick)}),pick=pool[Math.floor(Math.random()*pool.length)];if(!pick)return;
-  joinSect(pick);
+  try{const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',pick=await playerStateRpc('player_sect_search',{p_channel:channel,p_request_id:crypto.randomUUID()});if(!pick?.name)return toast('目前沒有可尋訪門派');await joinSect(pick)}catch(error){toast(error.message)}
 }
 async function leaveSect(){
   if(!await gameConfirm(`確定脫離${state.sect}？\n本門功勳、貢獻、職位與傳承見聞都會保留；免費尋訪其他門派需等待 3 個修練年。`,{title:'脫離門派',confirmText:'確認脫離',danger:true}))return;
