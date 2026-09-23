@@ -904,7 +904,11 @@ function cultivationAlignment(){
   const id=score>=.18?'righteous':score<=-.18?'evil':'balance',strength=[0,.04,.07,.1][tier],names={righteous:'守正',evil:'逐煞',balance:'守衡'},descriptions={righteous:'氣血、防禦與減傷提高，適合穩健迎敵。',evil:'三類攻擊提高，但承受傷害也會略增。',balance:'命中、閃避與第二招式提高，重視應變。'};
   return {id,name:names[id],tier,strength,description:descriptions[id]};
 }
-function swordPathMarkCounts(){const counts={righteous:0,evil:0,balance:0};(state.swordPathMarks||[]).forEach(mark=>{if(counts[mark.path]!=null)counts[mark.path]++});return counts}
+function swordPathMarkCounts(){
+  const counts={righteous:0,evil:0,balance:0},level=Math.max(0,Math.floor(state.swordLevel||0));
+  Object.entries(state.swordTrialChoices||{}).forEach(([stage,path])=>{const milestone=Number(stage);if(Number.isInteger(milestone)&&milestone>0&&milestone%10===0&&milestone<=level&&counts[path]!=null)counts[path]++});
+  return counts
+}
 function swordTechniquePathProfile(){
   const counts=swordPathMarkCounts(),total=counts.righteous+counts.evil+counts.balance;if(!total)return {path:'unmarked',righteous:0,evil:0,balance:0};
   const max=Math.max(counts.righteous,counts.evil,counts.balance),winners=Object.keys(counts).filter(key=>counts[key]===max),path=winners.length===1?winners[0]:'balance';
