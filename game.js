@@ -513,8 +513,8 @@ const marketFloors={market:1,scripture:1,reputation:1};
 let marketTreasurePage=1;
 const marketFloorLevels=[0,20,40,60,80];
 const chineseFloorNames=['一','二','三','四','五'];
-let marketFloorNoticeTimer=null,lastScriptureDayKey='',marketPurchaseOffer=null,marketPurchaseQuantity=1,currentMailId=null,serverScriptureStockDay='';
-const serverScriptureStockCache={};
+let marketFloorNoticeTimer=null,lastScriptureDayKey='',marketPurchaseOffer=null,marketPurchaseQuantity=1,currentMailId=null,serverScriptureStockDay='',serverReputationStockDay='';
+const serverScriptureStockCache={},serverReputationStockCache={};
 let bgmTheme=null,battle=null,battleTimer=null,swordTrialAdvanceTimer=null,swordTrialCountdownTimer=null,pauseStartedAt=null,sessionOnline=false,confirmResolver=null,prologueTimer=null,offlineRewardTimer=null,tribulationPillUseCount=0,tribulationLocked=false,tribulationTimers=[];
 let itemModalKey=null,itemModalQuantity=1,sellItemKey=null,sellItemQuantity=1;
 let identityChangeItemKey=null;
@@ -2878,12 +2878,8 @@ function seededRandom(seedText){let seed=[...seedText].reduce((value,char)=>(val
 function scriptureDailyState(){const today=dateKey()||'local';if(state.scripturePurchases.date!==today){state.scripturePurchases={date:today,ids:[]};save()}return state.scripturePurchases}
 function scriptureStock(floor){return serverScriptureStockCache[floor]||[]}
 async function loadServerScriptureStock(floor){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_scripture_stock',{p_channel:channel,p_floor:floor});if(serverScriptureStockDay&&serverScriptureStockDay!==result.day)for(const key of Object.keys(serverScriptureStockCache))delete serverScriptureStockCache[key];serverScriptureStockDay=String(result.day||'');serverScriptureStockCache[floor]=(Array.isArray(result.offers)?result.offers:[]).map(id=>techniqueBooks.find(book=>book.id===id)).filter(Boolean);return serverScriptureStockCache[floor]}
-function reputationStock(floor){
-  const today=dateKey()||'local',stars=reputationFloorStars[floor-1]||[1,2],pool=sectInvitationItems.filter(entry=>stars.includes(entry.star)),random=seededRandom(`聲望堂-${today}-${floor}`);
-  for(let index=pool.length-1;index>0;index--){const swap=Math.floor(random()*(index+1));[pool[index],pool[swap]]=[pool[swap],pool[index]]}
-  const resources=reputationResourceItems.filter(entry=>floor>=entry.minFloor&&floor<=entry.maxFloor).map(entry=>entry.id);
-  return [...resources,...pool.slice(0,6).map(entry=>entry.id)];
-}
+function reputationStock(floor){return serverReputationStockCache[floor]||[]}
+async function loadServerReputationStock(floor){const channel=leaderboardConfig.sessionKey.includes('release')?'formal':'test',result=await playerStateRpc('player_reputation_stock',{p_channel:channel,p_floor:floor});if(serverReputationStockDay&&serverReputationStockDay!==result.day)for(const key of Object.keys(serverReputationStockCache))delete serverReputationStockCache[key];serverReputationStockDay=String(result.day||'');serverReputationStockCache[floor]=Array.isArray(result.offers)?result.offers.filter(id=>itemCatalog[id]):[];return serverReputationStockCache[floor]}
 function marketDailyState(){
   const today=dateKey()||'local';
   if(state.marketDailyPurchases.date!==today)state.marketDailyPurchases={date:today,counts:{}};
@@ -3002,6 +2998,7 @@ function renderMarket(tab=currentMarketTab){
   const hasFloors=tab!=='treasure';
   const floor=hasFloors?(marketFloors[tab]||1):1;
   if(tab==='scripture'&&!serverScriptureStockCache[floor]){const content=$('#marketContent');if(content)content.innerHTML='<p class="leaderboard-loading">正在請伺服器展開今日藏經目錄……</p>';loadServerScriptureStock(floor).then(()=>{if(currentMarketTab==='scripture'&&(marketFloors.scripture||1)===floor)renderMarket('scripture')}).catch(error=>{if(content)content.innerHTML=`<p class="leaderboard-empty">${escapeLeaderboardText(error.message)}</p>`});return}
+  if(tab==='reputation'&&!serverReputationStockCache[floor]){const content=$('#marketContent');if(content)content.innerHTML='<p class="leaderboard-loading">正在請伺服器核對今日聲望堂清單……</p>';loadServerReputationStock(floor).then(()=>{if(currentMarketTab==='reputation'&&(marketFloors.reputation||1)===floor)renderMarket('reputation')}).catch(error=>{if(content)content.innerHTML=`<p class="leaderboard-empty">${escapeLeaderboardText(error.message)}</p>`});return}
   let products=tab==='scripture'?scriptureStock(floor):tab==='reputation'?reputationStock(floor):(hasFloors?data.floors[floor-1]:data.products);if(tab==='market')products=[...marketResourceItems.filter(entry=>entry.floor===floor).map(entry=>entry.id),...marketCultivationCaskets.filter(entry=>entry.floor===floor).map(entry=>entry.id),...products];if(tab==='treasure')products=products.filter(id=>id==='divineRoamingManual'?!(state.divineRoamingUnlocked&&!(state.divineRoamingManualCount||state.marketPermanentPurchases?.[id])):id==='mindEmbodimentManual'?!(hasMindEmbodiment()&&!(state.mindEmbodimentManualCount||state.marketPermanentPurchases?.[id])):true);
   const treasurePageCount=tab==='treasure'?Math.max(1,Math.ceil(products.length/9)):1;
   if(tab==='treasure'){marketTreasurePage=Math.max(1,Math.min(treasurePageCount,marketTreasurePage));products=products.slice((marketTreasurePage-1)*9,marketTreasurePage*9)}
@@ -3353,7 +3350,7 @@ setInterval(()=>{if($('#gameScreen').classList.contains('active'))$('#yearsElaps
 setInterval(updatePracticeTimers,1000);
 setInterval(updateDivineRoamingTimer,1000);
 setInterval(()=>{if(currentFeature==='immortal-restoration'&&(immortalRestorationJob()||wastelandRestorationJob()))renderImmortalRestoration()},5000);
-setInterval(()=>{const today=dateKey()||'local';if(today!==lastScriptureDayKey){lastScriptureDayKey=today;for(const key of Object.keys(serverScriptureStockCache))delete serverScriptureStockCache[key];serverScriptureStockDay='';if(!$('#marketModal').classList.contains('hidden'))renderMarket(currentMarketTab);if(currentFeature==='cave'&&currentCaveView==='brew')renderBrewProduction($('#caveInner'));if(currentFeature==='sect'&&currentSectView==='shop')renderSectShop()}},1000);
+setInterval(()=>{const today=dateKey()||'local';if(today!==lastScriptureDayKey){lastScriptureDayKey=today;for(const key of Object.keys(serverScriptureStockCache))delete serverScriptureStockCache[key];for(const key of Object.keys(serverReputationStockCache))delete serverReputationStockCache[key];serverScriptureStockDay='';serverReputationStockDay='';if(!$('#marketModal').classList.contains('hidden'))renderMarket(currentMarketTab);if(currentFeature==='cave'&&currentCaveView==='brew')renderBrewProduction($('#caveInner'));if(currentFeature==='sect'&&currentSectView==='shop')renderSectShop()}},1000);
 setInterval(()=>{if(sessionOnline&&!document.hidden)syncTrustedTime()},600000);
 setInterval(()=>{if(sessionOnline&&!document.hidden)syncJadeGrants()},60000);
 setInterval(verifyAccountOwnership,30000);
