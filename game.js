@@ -953,7 +953,7 @@ async function ensureLeaderboardSession(forceRefresh=false){
   localStorage.removeItem(leaderboardConfig.sessionKey);
   const response=await fetch(`${leaderboardConfig.url}/auth/v1/signup`,{method:'POST',headers:leaderboardHeaders(),body:'{}'});if(!response.ok)throw new Error('anonymous sign-in failed');return storeLeaderboardSession(await response.json());
 }
-const replayableSettlementRpcs=new Set(['player_mainline_finish','player_sect_spar_finish','player_sect_master_finish','player_ascension_battle_finish','player_immortal_battle_finish']);
+const replayableSettlementRpcs=new Set(['player_mainline_finish','player_sect_spar_finish','player_sect_master_finish','player_ascension_battle_finish','player_immortal_battle_finish','player_sword_trial_finish','player_body_trial_finish']);
 async function playerStateRpc(name,body={},retryAuth=true,retryTransient=true){
  let session=await ensureLeaderboardSession(),response;
  try{response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)})}
