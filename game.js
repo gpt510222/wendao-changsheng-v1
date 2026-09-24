@@ -953,7 +953,15 @@ async function ensureLeaderboardSession(forceRefresh=false){
   localStorage.removeItem(leaderboardConfig.sessionKey);
   const response=await fetch(`${leaderboardConfig.url}/auth/v1/signup`,{method:'POST',headers:leaderboardHeaders(),body:'{}'});if(!response.ok)throw new Error('anonymous sign-in failed');return storeLeaderboardSession(await response.json());
 }
-async function playerStateRpc(name,body={},retryAuth=true){let session=await ensureLeaderboardSession(),response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)});if(response.status===401&&retryAuth){await ensureLeaderboardSession(true);return playerStateRpc(name,body,false)}const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'伺服器角色狀態暫時無法使用');return data}
+const replayableSettlementRpcs=new Set(['player_mainline_finish','player_sect_spar_finish','player_sect_master_finish','player_ascension_battle_finish','player_immortal_battle_finish']);
+async function playerStateRpc(name,body={},retryAuth=true,retryTransient=true){
+ let session=await ensureLeaderboardSession(),response;
+ try{response=await fetch(`${leaderboardConfig.url}/rest/v1/rpc/${name}`,{method:'POST',headers:leaderboardHeaders(session.access_token),body:JSON.stringify(body)})}
+ catch(error){if(retryTransient&&replayableSettlementRpcs.has(name))return playerStateRpc(name,body,retryAuth,false);throw error}
+ if(response.status===401&&retryAuth){await ensureLeaderboardSession(true);return playerStateRpc(name,body,false,retryTransient)}
+ if(response.status>=500&&retryTransient&&replayableSettlementRpcs.has(name))return playerStateRpc(name,body,retryAuth,false);
+ const data=await response.json().catch(()=>null);if(!response.ok)throw new Error(data?.message||'伺服器角色狀態暫時無法使用');return data
+}
 function resourceWalletMigrationPayload(){return {free:String(state.free||0),swordEssence:String(state.swordEssence||0),aura:Math.max(0,Math.floor(Number(state.aura)||0)),spiritStone:Math.max(0,Math.floor(Number(state.spiritStone)||0)),food:Math.max(0,Math.floor(Number(state.food)||0)),wood:Math.max(0,Math.floor(Number(state.wood)||0)),meteorIron:Math.max(0,Math.floor(Number(state.meteorIron)||0))}}
 function caveMigrationPayload(){return {daoChildTotal:state.daoChildTotal,daoChildBought:state.daoChildBought,workerFood:state.workerFood,workerWood:state.workerWood,workerMeteorIron:state.workerMeteorIron,foodAreaLevel:state.foodAreaLevel,woodAreaLevel:state.woodAreaLevel,meteorIronAreaLevel:state.meteorIronAreaLevel,spiritPoolLevel:state.spiritPoolLevel}}
 function caveSecurityMigrationPayload(){return {caveCoreLevel:state.caveCoreLevel,caveCultivationLevel:state.caveCultivationLevel,caveSwordLevel:state.caveSwordLevel,caveBodyLevel:state.caveBodyLevel,caveCultivationEnabled:state.caveCultivationEnabled,caveSwordEnabled:state.caveSwordEnabled,caveBodyEnabled:state.caveBodyEnabled,spiritPathOpened:state.spiritPathOpened,swordPathOpened:state.swordPathOpened,bodyPathOpened:state.bodyPathOpened,swordEmbryo:state.swordEmbryo,metalRoot:state.metalRoot,woodRoot:state.woodRoot,waterRoot:state.waterRoot,fireRoot:state.fireRoot,earthRoot:state.earthRoot}}
